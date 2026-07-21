@@ -6,7 +6,8 @@ import type { GameId } from "../engine/types";
 
 export type HubState =
   | { view: "hub" }
-  | { view: "playing"; activeGame: GameId };
+  | { view: "playing"; activeGame: GameId }
+  | { view: "family-corner" };
 
 /** The initial hub state, showing the Game_Selector. */
 export const initialHubState: HubState = { view: "hub" };
@@ -31,4 +32,16 @@ export function selectGame(_state: HubState, id: GameId): HubState {
  */
 export function returnToHub(_state: HubState): HubState {
   return { view: "hub" };
+}
+
+/**
+ * Open Family_Corner, entering its create-and-send experience (Requirement 1.2).
+ *
+ * From any prior view (`hub`, `playing`, or `family-corner`), this pure
+ * transition yields the `family-corner` view. Mounting/tearing down the
+ * Family Corner UI is a side effect wired in `main.ts`; this module models only
+ * the pure view transition.
+ */
+export function openFamilyCorner(_state: HubState): HubState {
+  return { view: "family-corner" };
 }

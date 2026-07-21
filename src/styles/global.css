@@ -427,6 +427,64 @@ textarea:focus {
   color: var(--color-instructions);
 }
 
+/* --- Family Corner entry -------------------------------------------------- */
+
+/* A navigational destination distinct from the game cards. It sits below the
+   game grid and opens the private create-and-send experience rather than
+   launching a game (Requirements 1.1, 1.2). */
+.hub__family {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Full-width pill-ish button styled from the shared tokens so it themes for
+   light/dark for free. Uses the pink accent to read as a different kind of
+   destination from the cyan-accented game selector. Comfortably exceeds the
+   44x44px touch-target minimum (Requirement 10.2) and is keyboard-operable via
+   the global :focus-visible ring (Requirement 10.5). */
+.hub__family-corner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-md) var(--space-lg);
+  text-align: center;
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border: 1px dashed var(--color-accent-pink);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease,
+    box-shadow 120ms ease, background-color 120ms ease;
+}
+
+.hub__family-corner:hover {
+  transform: translateY(-3px);
+  border-color: var(--color-accent-pink);
+  background-color: var(--color-surface-alt);
+  box-shadow: var(--shadow-panel), var(--shadow-glow);
+}
+
+.hub__family-corner-glyph {
+  font-size: var(--font-size-2xl);
+  line-height: 1;
+}
+
+.hub__family-corner-name {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  color: var(--color-accent-pink);
+}
+
+.hub__family-corner-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-instructions);
+}
+
 /* --- Vote bar (global Like/Love) ------------------------------------------ */
 
 /* A centred row of reaction toggles beneath the launch button. Siblings of the
@@ -659,5 +717,617 @@ textarea:focus {
 
   .hub-grid {
     grid-template-columns: repeat(auto-fit, minmax(var(--hub-card-min), 1fr));
+  }
+}
+
+/* ============================================================================
+   Family Corner (Task 18.1)
+   ----------------------------------------------------------------------------
+   Kid-friendly, touch-first styling for the private create-and-send experience
+   (FamilyCorner view, DoodleBoard, NoteComposer, SenderSelector,
+   SendConfirmation) and the parent-only ParentInbox.
+
+   Everything below consumes the shared theme tokens (--color-*, --space-*,
+   --radius-*, …), so light/dark and the theme toggle apply for free with no
+   hardcoded colors (Requirements 1.3, 1.4, 1.5). Text relies on the semantic
+   text tokens (--color-text, --color-text-muted, --color-text-on-accent), each
+   of which is documented to meet WCAG AA >= 4.5:1 on its surface in both themes
+   (Requirement 10.4).
+
+   Sizing is large and touch-first: every interactive control (color swatches,
+   brush buttons, undo/clear, sender options, the Send button, and every inbox
+   button) is at least 44x44px (Requirement 10.2), and the layout is a single
+   column that stays usable from 320px to 1920px with no horizontal overflow
+   (Requirement 10.1). Controls remain keyboard-operable via the global
+   :focus-visible ring defined above.
+
+   Shared touch-target minimum for Family Corner controls.
+   ============================================================================ */
+
+:root {
+  --family-touch-min: 44px;
+}
+
+/* ----------------------------------------------------------------------------
+   FamilyCorner view — the create-and-send composition root.
+   Single-column stack that mirrors the Play_Area panel treatment so it feels
+   at home in the arcade, but with roomier spacing for small hands.
+   ---------------------------------------------------------------------------- */
+
+.family-corner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  width: 100%;
+  padding: var(--space-md);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+}
+
+/* Header row: Back-to-Hub control on the left, the big title beside it. Wraps
+   to two rows on very narrow screens so nothing overflows at 320px. */
+.family-corner__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
+}
+
+/* Back-to-Hub reuses the shared .btn look; the min height/width guarantees the
+   44x44 touch target even though .btn's padding usually already exceeds it. */
+.family-corner__back {
+  min-height: var(--family-touch-min);
+  min-width: var(--family-touch-min);
+}
+
+.family-corner__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  color: var(--color-accent-pink);
+  text-shadow: var(--shadow-glow);
+  letter-spacing: 0.03em;
+}
+
+/* Child-factory slots are plain full-width blocks; the children own their own
+   internal layout. */
+.family-corner__sender,
+.family-corner__doodle,
+.family-corner__note {
+  width: 100%;
+}
+
+/* Friendly callout for inline prompts/errors ("Pick who you are first!", …).
+   Accent-tinted surface with on-accent text so it reads clearly and stays high
+   contrast in both themes. */
+.family-corner__prompt {
+  margin: 0;
+  padding: var(--space-md) var(--space-lg);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  text-align: center;
+  color: var(--color-text-on-accent);
+  background-color: var(--color-accent-pink);
+  border-radius: var(--radius-md);
+}
+
+/* Respect the component's `hidden` toggle even though we style the element. */
+.family-corner__prompt[hidden] {
+  display: none;
+}
+
+/* The big, bold "Send to Dad" button. Full-width and tall so it is the obvious
+   primary action; inherits the accent fill + on-accent text from .btn--primary
+   for AA contrast in both themes. */
+.family-corner__send {
+  width: 100%;
+  min-height: 64px;
+  padding: var(--space-md) var(--space-lg);
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  letter-spacing: 0.02em;
+}
+
+/* ----------------------------------------------------------------------------
+   DoodleBoard — canvas plus palette / brushes / actions toolbar.
+   ---------------------------------------------------------------------------- */
+
+.doodle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  width: 100%;
+}
+
+/* The canvas scales to the container width (height:auto is applied globally to
+   canvas), so it never causes horizontal overflow (Requirement 10.1). A light
+   drawing surface keeps kid strokes visible in both themes. */
+.doodle__canvas {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  background-color: #ffffff;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  touch-action: none;
+  cursor: crosshair;
+}
+
+/* Toolbar groups stack on mobile and wrap freely; centred for a tidy look. */
+.doodle__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  width: 100%;
+}
+
+.doodle__palette,
+.doodle__brushes,
+.doodle__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+/* Color swatch: the button sets its own inline background-color, so we only
+   own the box + border + selected ring here (never the fill). A neutral border
+   frames light swatches against the surface. Meets the 44x44 target. */
+.doodle__color {
+  width: var(--family-touch-min);
+  height: var(--family-touch-min);
+  padding: 0;
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 100ms ease, box-shadow 100ms ease;
+}
+
+.doodle__color:hover {
+  transform: scale(1.08);
+}
+
+/* Selected color: a visible ring drawn with the accent token via box-shadow
+   (outline is reserved for the keyboard focus ring). The double ring — accent
+   plus a surface-colored gap — stays visible over any swatch color in both
+   themes (Requirement 10.4 for the selected affordance). */
+.doodle__color[aria-pressed="true"] {
+  box-shadow:
+    0 0 0 3px var(--color-surface),
+    0 0 0 6px var(--color-accent-cyan);
+}
+
+/* Brush button: a round control whose inner dot previews the stroke size.
+   The button itself hits 44x44; the dot is sized per brush via data-width. */
+.doodle__brush {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--family-touch-min);
+  height: var(--family-touch-min);
+  padding: 0;
+  color: var(--color-text);
+  background-color: var(--color-surface-alt);
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: border-color 100ms ease, background-color 100ms ease;
+}
+
+.doodle__brush::before {
+  content: "";
+  display: block;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+/* Dot sizes echo the three brush widths (Small 4 / Medium 10 / Large 22). */
+.doodle__brush[data-width="4"]::before {
+  width: 6px;
+  height: 6px;
+}
+.doodle__brush[data-width="10"]::before {
+  width: 12px;
+  height: 12px;
+}
+.doodle__brush[data-width="22"]::before {
+  width: 20px;
+  height: 20px;
+}
+
+.doodle__brush:hover {
+  border-color: var(--color-accent-cyan);
+}
+
+/* Selected brush: accent fill so the active size is obvious; the dot flips to
+   on-accent so it stays visible on the filled button in both themes. */
+.doodle__brush[aria-pressed="true"] {
+  color: var(--color-text-on-accent);
+  background-color: var(--color-accent-cyan);
+  border-color: var(--color-accent-cyan);
+}
+
+/* Undo / Clear: labelled text buttons on the shared surface tokens, sized to
+   the touch minimum and keyboard-operable. */
+.doodle__action {
+  min-height: var(--family-touch-min);
+  min-width: var(--family-touch-min);
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text);
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.doodle__action:hover {
+  border-color: var(--color-accent-cyan);
+  background-color: var(--color-surface);
+}
+
+/* ----------------------------------------------------------------------------
+   NoteComposer — labelled textarea with a live remaining-character count.
+   ---------------------------------------------------------------------------- */
+
+.note-composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.note-composer__label {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* Roomy, legible input. Full-width (box-sizing:border-box is global) so it
+   never overflows; the min-height keeps it a comfortable multi-line target. */
+.note-composer__input {
+  width: 100%;
+  min-height: 96px;
+  padding: var(--space-md);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-lg);
+  line-height: 1.5;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  resize: vertical;
+}
+
+.note-composer__input:hover {
+  border-color: var(--color-accent-cyan);
+}
+
+/* Muted count text still meets AA on the surface in both themes. */
+.note-composer__count {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  text-align: right;
+  color: var(--color-text-muted);
+}
+
+/* ----------------------------------------------------------------------------
+   SenderSelector — exactly two big "who are you?" toggles (Kian | Eloise).
+   ---------------------------------------------------------------------------- */
+
+.sender-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  width: 100%;
+}
+
+/* Each option grows to share the row, is tall and bold, and comfortably clears
+   the 44x44 minimum. Uses the shared surface tokens so it themes for free. */
+.sender-selector__option {
+  flex: 1 1 40%;
+  min-height: 56px;
+  min-width: var(--family-touch-min);
+  padding: var(--space-md) var(--space-lg);
+  font-family: var(--font-display);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  background-color: var(--color-surface-alt);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease,
+    color 120ms ease;
+}
+
+.sender-selector__option:hover {
+  border-color: var(--color-accent-pink);
+}
+
+/* Selected sender: accent fill with on-accent text — a clear, high-contrast
+   pressed state in both themes. */
+.sender-selector__option[aria-pressed="true"] {
+  color: var(--color-text-on-accent);
+  background-color: var(--color-accent-pink);
+  border-color: var(--color-accent-pink);
+}
+
+/* ----------------------------------------------------------------------------
+   SendConfirmation — full-viewport celebration overlay.
+   Fixed and above all content, with the confetti canvas filling it. It is
+   purely decorative, so it never intercepts input (pointer-events: none) and
+   stays out of the layout when hidden.
+   ---------------------------------------------------------------------------- */
+
+.send-confirmation {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.send-confirmation[hidden] {
+  display: none;
+}
+
+.send-confirmation__confetti {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+}
+
+/* ----------------------------------------------------------------------------
+   ParentInbox — clean list of submission cards with thumbnails, plus a detail
+   view that scales the full drawing to fit.
+   ---------------------------------------------------------------------------- */
+
+.inbox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  width: 100%;
+}
+
+.inbox__heading {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  color: var(--color-accent-cyan);
+  text-shadow: var(--shadow-glow);
+}
+
+.inbox__content {
+  width: 100%;
+}
+
+/* Card list: single column, unstyled <ul>. */
+.inbox__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Each item is a card: the select control (thumbnail + meta) on the left, the
+   delete button on the right. Wraps on narrow screens. */
+.inbox__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+}
+
+/* The select control fills the remaining width and lays its content out in a
+   row that wraps; it is a large keyboard-reachable target. */
+.inbox__select {
+  display: flex;
+  flex: 1 1 240px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+  min-height: var(--family-touch-min);
+  padding: var(--space-sm);
+  text-align: left;
+  color: var(--color-text);
+  background-color: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.inbox__select:hover {
+  background-color: var(--color-surface-alt);
+}
+
+/* Thumbnail preview of the drawing. Fixed box, cover-cropped, light backing so
+   transparent PNGs still read. */
+.inbox__thumb {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.inbox__sender {
+  font-family: var(--font-display);
+  font-size: var(--font-size-base);
+  color: var(--color-accent-cyan);
+}
+
+.inbox__time {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* Content indicator ("Drawing + note", …) — small pill using surface-alt. */
+.inbox__indicator {
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-sm);
+}
+
+/* Note preview: muted, truncated to a single line so cards stay uniform. */
+.inbox__preview {
+  flex: 1 1 100%;
+  overflow: hidden;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Delete: destructive-looking outline that fills on hover; sized to touch min. */
+.inbox__delete {
+  min-height: var(--family-touch-min);
+  min-width: var(--family-touch-min);
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-accent-pink);
+  background-color: transparent;
+  border: 2px solid var(--color-accent-pink);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.inbox__delete:hover {
+  color: var(--color-text-on-accent);
+  background-color: var(--color-accent-pink);
+}
+
+/* Detail (full) view: a single column with a back control, meta, the full
+   image scaled to fit, and the note. */
+.inbox__detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  width: 100%;
+  padding: var(--space-md);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+}
+
+/* Back-to-list: shares the touch minimum and surface tokens. */
+.inbox__back {
+  align-self: flex-start;
+  min-height: var(--family-touch-min);
+  min-width: var(--family-touch-min);
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text);
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.inbox__back:hover {
+  border-color: var(--color-accent-cyan);
+  background-color: var(--color-surface);
+}
+
+/* Full drawing scaled to fit the column width, never overflowing. */
+.inbox__detail-image {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* Full note text: readable, wraps and preserves line breaks. */
+.inbox__detail-note {
+  margin: 0;
+  padding: var(--space-md);
+  font-size: var(--font-size-lg);
+  line-height: 1.5;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background-color: var(--color-bg);
+  border-radius: var(--radius-md);
+}
+
+/* Empty / loading / error states — centred muted text, retry as a button. */
+.inbox__empty,
+.inbox__loading {
+  padding: var(--space-xl) var(--space-md);
+  font-size: var(--font-size-lg);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.inbox__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-xl) var(--space-md);
+  text-align: center;
+  color: var(--color-text);
+}
+
+.inbox__retry {
+  min-height: var(--family-touch-min);
+  min-width: var(--family-touch-min);
+  padding: var(--space-sm) var(--space-lg);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text-on-accent);
+  background-color: var(--color-accent-cyan);
+  border: 1px solid var(--color-accent-cyan);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.inbox__retry:hover {
+  background-color: var(--color-accent-pink);
+  border-color: var(--color-accent-pink);
+}
+
+/* ----------------------------------------------------------------------------
+   Family Corner responsive tuning
+   ---------------------------------------------------------------------------- */
+
+/* From tablet up, give the sender toggles a comfortable side-by-side row and
+   cap the doodle canvas so it does not become unwieldy on wide screens. */
+@media (min-width: 768px) {
+  .sender-selector__option {
+    flex-basis: 0;
+  }
+
+  .doodle__canvas {
+    max-width: 720px;
+    margin-inline: auto;
   }
 }

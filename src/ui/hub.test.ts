@@ -170,6 +170,88 @@ describe("createHub", () => {
   });
 });
 
+describe("createHub — Family Corner entry", () => {
+  let host: HTMLElement;
+
+  beforeEach(() => {
+    document.body.innerHTML = "";
+    host = document.createElement("div");
+    document.body.appendChild(host);
+  });
+
+  it("renders a Family Corner entry distinct from the game cards when the callback is provided (Req 1.1)", () => {
+    const hub = createHub({
+      onSelect: () => {},
+      onOpenFamilyCorner: () => {},
+      votes: stubVoteDeps(),
+    });
+    hub.mount(host);
+
+    const entry = host.querySelector<HTMLButtonElement>(".hub__family-corner");
+    expect(entry).not.toBeNull();
+    // It is a native button, keyboard-operable, with an accessible name.
+    expect(entry?.tagName).toBe("BUTTON");
+    expect(entry?.type).toBe("button");
+    expect(entry?.getAttribute("aria-label")?.length).toBeGreaterThan(0);
+    // It is not one of the four game cards.
+    expect(entry?.classList.contains("hub-card")).toBe(false);
+    expect(host.querySelectorAll(".hub-card")).toHaveLength(4);
+  });
+
+  it("omits the Family Corner entry when no callback is provided", () => {
+    const hub = createHub({ onSelect: () => {}, votes: stubVoteDeps() });
+    hub.mount(host);
+
+    expect(host.querySelector(".hub__family-corner")).toBeNull();
+  });
+
+  it("invokes onOpenFamilyCorner when the entry is activated (Req 1.2)", () => {
+    let opened = 0;
+    const hub = createHub({
+      onSelect: () => {},
+      onOpenFamilyCorner: () => {
+        opened += 1;
+      },
+      votes: stubVoteDeps(),
+    });
+    hub.mount(host);
+
+    host.querySelector<HTMLButtonElement>(".hub__family-corner")?.click();
+    expect(opened).toBe(1);
+  });
+
+  it("activating the Family Corner entry does not launch a game", () => {
+    const selected: GameId[] = [];
+    const hub = createHub({
+      onSelect: (id) => selected.push(id),
+      onOpenFamilyCorner: () => {},
+      votes: stubVoteDeps(),
+    });
+    hub.mount(host);
+
+    host.querySelector<HTMLButtonElement>(".hub__family-corner")?.click();
+    expect(selected).toEqual([]);
+  });
+
+  it("cleans up the entry's listener on destroy", () => {
+    let opened = 0;
+    const hub = createHub({
+      onSelect: () => {},
+      onOpenFamilyCorner: () => {
+        opened += 1;
+      },
+      votes: stubVoteDeps(),
+    });
+    hub.mount(host);
+    const entry = host.querySelector<HTMLButtonElement>(".hub__family-corner");
+
+    hub.destroy();
+    // The button is detached and its handler released.
+    entry?.click();
+    expect(opened).toBe(0);
+  });
+});
+
 describe("createHub — vote bar", () => {
   let host: HTMLElement;
 

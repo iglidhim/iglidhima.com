@@ -21,10 +21,18 @@
 // 8.2), matching the tokens defined in src/styles/global.css.
 
 import type { GameId } from "./engine/types";
-import { initialHubState, selectGame, returnToHub, type HubState } from "./lib/hubState";
+import {
+  initialHubState,
+  selectGame,
+  returnToHub,
+  openFamilyCorner,
+  type HubState,
+} from "./lib/hubState";
 import { initTheme } from "./lib/theme";
 import { createHub, type Hub } from "./ui/hub";
 import { createPlayArea, type PlayArea } from "./ui/playArea";
+import { createFamilyCorner, type FamilyCorner } from "./ui/familyCorner";
+import { createParentInbox, type ParentInbox } from "./ui/parentInbox";
 import { createThemeToggle, type ThemeToggle } from "./ui/themeToggle";
 
 /**
@@ -35,12 +43,14 @@ import { createThemeToggle, type ThemeToggle } from "./ui/themeToggle";
  * unused — the Site simply boots and runs.
  */
 export interface ArcadeController {
-  /** The current pure hub view state (`hub` | `playing`). */
+  /** The current pure hub view state (`hub` | `playing` | `family-corner`). */
   readonly state: HubState;
   /** The live Hub view when on the selector, else `null`. */
   readonly hub: Hub | null;
   /** The live Play_Area hosting the Active_Game, else `null`. */
   readonly playArea: PlayArea | null;
+  /** The live Family_Corner view when open, else `null`. */
+  readonly familyCorner: FamilyCorner | null;
   /**
    * The in-flight (or settled) promise for the current game-module load, or
    * `null` when showing the Hub. Awaiting it lets callers wait until the
@@ -86,9 +96,10 @@ export function initArcade(root: HTMLElement): ArcadeController {
   let state: HubState = initialHubState;
 
   // Live view references. At most one of these is non-null at a time, mirroring
-  // the hub state machine's `hub` | `playing` views.
+  // the hub state machine's `hub` | `playing` | `family-corner` views.
   let hub: Hub | null = null;
   let playArea: PlayArea | null = null;
+  let familyCorner: FamilyCorner | null = null;
   // The current game-module load promise while playing (null on the Hub).
   let loaded: Promise<void> | null = null;
 
@@ -109,12 +120,26 @@ export function initArcade(root: HTMLElement): ArcadeController {
     loaded = null;
   }
 
+  /**
+   * Tear down the Family_Corner view if mounted. Destroying it releases every
+   * child factory (DoodleBoard, NoteComposer, SenderSelector, SendConfirmation),
+   * detaches listeners, and clears the Family_Corner DOM.
+   */
+  function teardownFamilyCorner(): void {
+    familyCorner?.destroy();
+    familyCorner = null;
+  }
+
   /** Render the Hub / Game_Selector as the sole view (Requirement 1.1). */
   function renderHub(): void {
     teardownPlayArea();
+    teardownFamilyCorner();
     teardownHub();
 
-    hub = createHub({ onSelect: handleSelect });
+    hub = createHub({
+      onSelect: handleSelect,
+      onOpenFamilyCorner: handleOpenFamilyCorner,
+    });
     hub.mount(container);
   }
 
@@ -125,6 +150,7 @@ export function initArcade(root: HTMLElement): ArcadeController {
    */
   function renderGame(id: GameId): void {
     teardownHub();
+    teardownFamilyCorner();
     teardownPlayArea();
 
     playArea = createPlayArea({
@@ -136,6 +162,23 @@ export function initArcade(root: HTMLElement): ArcadeController {
     // internally by surfacing a message and returning to the Hub. The promise
     // is retained so callers (tests) can await the mount.
     loaded = playArea.load();
+  }
+
+  /**
+   * Mount the Family_Corner create-and-send view as the sole view
+   * (Requirements 1.2, 1.3, 1.4, 1.5). Tears down any live Hub / Play_Area
+   * first, so exactly one view occupies the shared `.arcade-container` at a
+   * time (no leaks). The persistent header + theme toggle are untouched, so
+   * Family Corner inherits the current light/dark theme and updates live with
+   * the toggle via the shared `data-theme` tokens.
+   */
+  function renderFamilyCorner(): void {
+    teardownHub();
+    teardownPlayArea();
+    teardownFamilyCorner();
+
+    familyCorner = createFamilyCorner({ onBackToHub: handleBackToHub });
+    familyCorner.mount(container);
   }
 
   /**
@@ -156,6 +199,17 @@ export function initArcade(root: HTMLElement): ArcadeController {
     renderHub();
   }
 
+  /**
+   * Handle the Hub's Family Corner entry: transition to `family-corner` and
+   * mount the create-and-send view (Requirement 1.2). Family Corner's own
+   * Back-to-Hub control reuses {@link handleBackToHub}, returning via
+   * `returnToHub` and re-rendering the Hub.
+   */
+  function handleOpenFamilyCorner(): void {
+    state = openFamilyCorner(state);
+    renderFamilyCorner();
+  }
+
   // Initial render: the Site loads showing the Hub (Requirement 1.1).
   renderHub();
 
@@ -169,11 +223,15 @@ export function initArcade(root: HTMLElement): ArcadeController {
     get playArea() {
       return playArea;
     },
+    get familyCorner() {
+      return familyCorner;
+    },
     get loaded() {
       return loaded;
     },
     destroy(): void {
       teardownPlayArea();
+      teardownFamilyCorner();
       teardownHub();
       themeToggle.destroy();
       layout.remove();
@@ -181,10 +239,80 @@ export function initArcade(root: HTMLElement): ArcadeController {
   };
 }
 
-// Auto-boot in the browser: mount the arcade into the `#app` root defined in
-// index.html (Requirement 1.1). Guarded so importing this module in a non-browser
-// / test context (where `#app` is absent) is a harmless no-op; the browser page
-// always provides `#app`, so runtime behavior there is unchanged.
+/**
+ * A handle to a running Parent_Inbox instance, returned by {@link bootInbox}.
+ * Mirrors {@link ArcadeController} in spirit but only exposes the inbox view
+ * and the settled `load()` promise so integration/smoke tests can await the
+ * initial submission fetch without reaching into module-private state.
+ */
+export interface InboxController {
+  /** The live Parent_Inbox view. */
+  readonly inbox: ParentInbox;
+  /**
+   * The in-flight (or settled) promise for the initial submission-list load,
+   * so callers (tests) can await the first render.
+   */
+  readonly loaded: Promise<void>;
+  /** Tear down the inbox: destroy the view and detach the layout. */
+  destroy(): void;
+}
+
+/**
+ * Boot the Parent_Inbox as the sole view inside the given mount root
+ * (Requirement 7.1). This is the `/inbox` route, handled outside the hub state
+ * machine: the page is only reachable behind Cloudflare Access (an owner
+ * deployment step), so no client-side auth logic is needed here — the Worker
+ * and the edge gate enforce access, and this function simply renders the inbox.
+ *
+ * Mirrors {@link initArcade}: it builds the same `.arcade-layout` scaffold with
+ * the persistent `.arcade-header` (hosting the theme toggle) and the centered
+ * `.arcade-container`, then mounts {@link createParentInbox} into the container
+ * and kicks off its async `load()`. It deliberately does NOT initialize the
+ * arcade hub, so the inbox owns the page.
+ */
+export function bootInbox(root: HTMLElement): InboxController {
+  // Same single-page scaffold as the arcade, so the inbox inherits the shared
+  // layout, header, and theme toggle (light/dark via the `data-theme` tokens).
+  const layout = document.createElement("main");
+  layout.className = "arcade-layout";
+
+  const header = document.createElement("header");
+  header.className = "arcade-header";
+  const themeToggle: ThemeToggle = createThemeToggle();
+  themeToggle.mount(header);
+  layout.appendChild(header);
+
+  const container = document.createElement("div");
+  container.className = "arcade-container";
+  layout.appendChild(container);
+  root.appendChild(layout);
+
+  const inbox = createParentInbox();
+  inbox.mount(container);
+  // Kick off the initial submission-list fetch; the inbox surfaces its own
+  // loading / empty / error states. The promise is retained so callers (tests)
+  // can await the first render.
+  const loaded = inbox.load();
+
+  return {
+    get inbox() {
+      return inbox;
+    },
+    get loaded() {
+      return loaded;
+    },
+    destroy(): void {
+      inbox.destroy();
+      themeToggle.destroy();
+      layout.remove();
+    },
+  };
+}
+
+// Auto-boot in the browser: mount into the `#app` root defined in index.html.
+// Guarded so importing this module in a non-browser / test context (where
+// `#app` is absent) is a harmless no-op; the browser page always provides
+// `#app`, so runtime behavior there is unchanged.
 const app = document.querySelector<HTMLDivElement>("#app");
 if (app) {
   // Resolve and apply the initial theme before rendering any chrome, so the
@@ -192,5 +320,12 @@ if (app) {
   // no-flash inline script in index.html has already applied it for first
   // paint; this re-confirms it via the shared resolve logic.
   initTheme();
-  initArcade(app);
+  // The `/inbox` route is handled outside the hub machine: mount the
+  // Parent_Inbox instead of the arcade (the page is only reachable behind
+  // Cloudflare Access). Any other path boots the arcade hub as usual.
+  if (window.location.pathname === "/inbox") {
+    bootInbox(app);
+  } else {
+    initArcade(app);
+  }
 }

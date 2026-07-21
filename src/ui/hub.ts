@@ -106,6 +106,12 @@ export interface CreateHubOptions {
   title?: string;
   /** Optional override for the vote-system dependencies (defaults to the real module). */
   votes?: Partial<HubVoteDeps>;
+  /**
+   * Invoked when a Visitor activates the Family Corner entry, so the caller can
+   * drive the hub state machine to `family-corner` and mount the Family Corner
+   * view (Requirements 1.1, 1.2). When omitted, the entry is not rendered.
+   */
+  onOpenFamilyCorner?: () => void;
 }
 
 /** One vote button plus a small controller for optimistic updates. */
@@ -129,7 +135,7 @@ interface VoteControl {
  * within the initial viewport (Requirements 1.1, 1.2).
  */
 export function createHub(options: CreateHubOptions): Hub {
-  const { onSelect, title = DEFAULT_TITLE } = options;
+  const { onSelect, title = DEFAULT_TITLE, onOpenFamilyCorner } = options;
 
   // Resolve vote dependencies, allowing partial overrides for tests.
   const votes: HubVoteDeps = {
@@ -287,6 +293,48 @@ export function createHub(options: CreateHubOptions): Hub {
   }
 
   root.append(heading, grid);
+
+  // --- Family Corner entry --------------------------------------------------
+  // A navigational destination distinct from the four game cards: it does not
+  // launch a game, it opens the private create-and-send experience for the
+  // family (Requirements 1.1, 1.2). Rendered as its own native <button> in a
+  // separate section below the game grid so it reads as a different kind of
+  // destination. Only rendered when the caller wires `onOpenFamilyCorner`.
+  if (onOpenFamilyCorner) {
+    const familyNav = document.createElement("nav");
+    familyNav.className = "hub__family";
+    familyNav.setAttribute("aria-label", "Family Corner");
+
+    const familyBtn = document.createElement("button");
+    familyBtn.type = "button";
+    familyBtn.className = "hub__family-corner";
+    // Self-describing accessible name (Requirement 9.5-style labelling).
+    familyBtn.setAttribute("aria-label", "Family Corner. Draw & send to Dad");
+
+    const familyGlyph = document.createElement("span");
+    familyGlyph.className = "hub__family-corner-glyph";
+    familyGlyph.setAttribute("aria-hidden", "true");
+    familyGlyph.textContent = "✉️";
+
+    const familyName = document.createElement("span");
+    familyName.className = "hub__family-corner-name";
+    familyName.textContent = "Family Corner";
+
+    const familyLabel = document.createElement("span");
+    familyLabel.className = "hub__family-corner-label";
+    familyLabel.textContent = "Draw & send to Dad";
+
+    familyBtn.append(familyGlyph, familyName, familyLabel);
+
+    const familyHandler = (): void => onOpenFamilyCorner();
+    familyBtn.addEventListener("click", familyHandler);
+    listeners.push(() =>
+      familyBtn.removeEventListener("click", familyHandler),
+    );
+
+    familyNav.appendChild(familyBtn);
+    root.appendChild(familyNav);
+  }
 
   // Kick off the aggregate fetch without blocking the initial render. When it
   // resolves, populate each card's counts (unless the hub was destroyed first).

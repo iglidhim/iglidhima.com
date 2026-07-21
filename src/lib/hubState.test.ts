@@ -1,6 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 import fc from "fast-check";
-import { selectGame, returnToHub, type HubState } from "./hubState";
+import {
+  selectGame,
+  returnToHub,
+  openFamilyCorner,
+  type HubState,
+} from "./hubState";
 import type { GameId } from "../engine/types";
 
 const GAME_IDS: readonly GameId[] = [
@@ -12,10 +17,11 @@ const GAME_IDS: readonly GameId[] = [
 
 const gameIdArb: fc.Arbitrary<GameId> = fc.constantFrom(...GAME_IDS);
 
-// Any reachable hub state: either the selector, or playing some game.
+// Any reachable hub state: the selector, playing some game, or Family Corner.
 const hubStateArb: fc.Arbitrary<HubState> = fc.oneof(
   fc.constant<HubState>({ view: "hub" }),
   gameIdArb.map<HubState>((activeGame) => ({ view: "playing", activeGame })),
+  fc.constant<HubState>({ view: "family-corner" }),
 );
 
 describe("hubState", () => {
@@ -60,6 +66,21 @@ describe("hubState", () => {
 
         bindReturnToHub(playing);
         expect(destroy).toHaveBeenCalledTimes(1);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  // Feature: family-corner, Property 17: View transition into Family Corner
+  it("openFamilyCorner yields the family-corner view from any prior state", () => {
+    fc.assert(
+      fc.property(hubStateArb, (state) => {
+        const result = openFamilyCorner(state);
+
+        // From any prior view (hub, playing, or family-corner), the pure
+        // transition always yields the family-corner view (Requirement 1.2).
+        expect(result).toEqual({ view: "family-corner" });
+        expect(result.view).toBe("family-corner");
       }),
       { numRuns: 100 },
     );

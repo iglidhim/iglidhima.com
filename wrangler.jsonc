@@ -1,25 +1,55 @@
 {
-  // Cloudflare Worker + static-assets config for the arcade hub.
-  //
-  // The Worker script (src/worker/index.ts) serves a tiny same-origin JSON API
-  // for the global Like/Love voting system (GET /api/votes, POST /api/vote)
-  // backed by the KV namespace bound as `VOTES`. Every other route is delegated
-  // to the `ASSETS` binding, which serves the Vite build output in ./dist with
-  // single-page-application fallback for client-side routing.
-  "name": "iglidhima-arcade",
-  "compatibility_date": "2025-01-01",
-  "main": "src/worker/index.ts",
-  "assets": {
-    "directory": "./dist",
-    "binding": "ASSETS",
-    "not_found_handling": "single-page-application"
-  },
-  // KV namespace holding the anonymous aggregate vote counts.
-  // `id` is the VOTES KV namespace id.
-  "kv_namespaces": [
-    {
-      "binding": "VOTES",
-      "id": "f24f38f002654cb6b9d0319bb8c8720a"
-    }
-  ]
+	// Cloudflare Worker + static-assets config for the arcade hub.
+	//
+	// The Worker script (src/worker/index.ts) serves a tiny same-origin JSON API
+	// for the global Like/Love voting system (GET /api/votes, POST /api/vote)
+	// backed by the KV namespace bound as `VOTES`. Every other route is delegated
+	// to the `ASSETS` binding, which serves the Vite build output in ./dist with
+	// single-page-application fallback for client-side routing.
+	"name": "iglidhima-arcade",
+	"compatibility_date": "2025-01-01",
+	"main": "src/worker/index.ts",
+	"assets": {
+		"directory": "./dist",
+		"binding": "ASSETS",
+		"not_found_handling": "single-page-application"
+	},
+	// Cloudflare Access (Zero Trust) config used by src/worker/family/identity.ts
+	// to verify the parent inbox JWT: the team domain and the application AUD tag.
+	"vars": {
+		"ACCESS_TEAM_DOMAIN": "wild-darkness-5c88.cloudflareaccess.com",
+		"ACCESS_AUD": "18eeda555a12a8e05800b451d398b8fa6b4f0984b57086a18d659cfd7b585751"
+	},
+	// KV namespaces.
+	//  - VOTES: anonymous aggregate vote counts (existing).
+	//  - FAMILY_RATE: Family Corner abuse rate-limit counters (60s TTL windows).
+	"kv_namespaces": [
+		{
+			"binding": "VOTES",
+			"id": "f24f38f002654cb6b9d0319bb8c8720a"
+		},
+		{
+			"binding": "FAMILY_RATE",
+			// Created via: npx wrangler kv namespace create FAMILY_RATE
+			"id": "c23530caeea547308df52af7d890153b"
+		}
+	],
+	// R2 bucket holding Family Corner drawing PNG blobs.
+	// Create the bucket before deploying:
+	//   npx wrangler r2 bucket create family-corner-media
+	"r2_buckets": [
+		{
+			"binding": "FAMILY_MEDIA",
+			"bucket_name": "family-corner-media"
+		}
+	],
+	// D1 database holding the Family Corner submissions index.
+	"d1_databases": [
+		{
+			"binding": "FAMILY_DB",
+			"database_name": "family-corner",
+			// Created via: npx wrangler d1 create family-corner
+			"database_id": "3388c340-d550-4984-b735-3febdd880b84"
+		}
+	]
 }
