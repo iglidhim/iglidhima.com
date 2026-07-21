@@ -1,0 +1,22 @@
+{
+  // Dedicated type-check config for the Cloudflare Worker code (and its tests).
+  //
+  // The client (src, test) is type-checked by tsconfig.json against the DOM
+  // libs. The Worker runs on the Workers runtime, whose globals (KVNamespace,
+  // Fetcher, the Workers Request/Response, etc.) come from
+  // @cloudflare/workers-types — NOT the DOM lib. Loading both the DOM lib and
+  // the Workers types into one program conflicts on shared globals, so the
+  // Worker gets its own program here: DOM libs are dropped and only the Workers
+  // types are pulled in via `types`. tsconfig.json excludes `src/worker/**` and
+  // the worker tests so the two programs never overlap.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": ["@cloudflare/workers-types"],
+    "noEmit": true
+  },
+  // Override the base config's `exclude` (which hides the worker from the client
+  // program) so this program can actually see the worker sources.
+  "exclude": [],
+  "include": ["src/worker/**/*.ts", "test/worker.*.test.ts"]
+}

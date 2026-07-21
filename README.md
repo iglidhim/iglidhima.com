@@ -22,6 +22,44 @@ npm test           # run unit + property tests (Vitest)
 npm run test:e2e   # run Playwright integration/accessibility tests
 ```
 
+## Voting
+
+Each game shows two independent global reactions — a 👍 **Like** and a ❤️
+**Love** — each with its own worldwide count shared across all visitors. A
+visitor can toggle each reaction on or off (one like and one love per game per
+browser).
+
+- **Backend.** A small Cloudflare Worker (`src/worker/index.ts`) exposes a
+  same-origin JSON API backed by a KV namespace:
+  - `GET /api/votes` returns the aggregate `{ like, love }` counts for all four
+    games.
+  - `POST /api/vote` with `{ gameId, reaction, delta }` (`reaction` is `like` or
+    `love`, `delta` is `1` or `-1`) applies the change, clamps the count at
+    zero, and returns the game's updated counts.
+  Every other route is delegated to the static-assets binding, so the SPA is
+  served exactly as before.
+- **Anonymous.** Only aggregate integer counts live in KV — no personal data is
+  collected. Whether *this* browser has liked/loved a game is remembered in
+  `localStorage` (keys `iglidhima.arcade.vote.<gameId>.<reaction>`), which only
+  drives the pressed state of the buttons.
+- **Consistency.** KV is eventually consistent and has no atomic increment, so
+  the counter uses read-modify-write. Concurrent votes can occasionally lose an
+  increment — acceptable for a low-traffic likes counter.
+
+### KV namespace setup (required before deploying)
+
+The KV namespace id in `wrangler.jsonc` is a **placeholder**
+(`PLACEHOLDER_KV_ID_REPLACE_ME`). Before deploying you must create a real
+namespace and paste its id in:
+
+```bash
+npx wrangler kv namespace create VOTES
+```
+
+Copy the printed `id` value over `PLACEHOLDER_KV_ID_REPLACE_ME` in the
+`kv_namespaces` binding of `wrangler.jsonc`. `wrangler deploy` will fail until a
+valid namespace id is set.
+
 ## Deployment (Cloudflare Pages)
 
 The site deploys automatically to [Cloudflare Pages](https://pages.cloudflare.com/)

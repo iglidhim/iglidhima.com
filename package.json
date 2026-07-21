@@ -6,7 +6,7 @@
   "description": "Single-page static browser-based arcade hub served at iglidhima.com",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && tsc --noEmit -p tsconfig.worker.json && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
+    "@cloudflare/workers-types": "^4.20260702.1",
     "@playwright/test": "^1.61.1",
     "fast-check": "^4.9.0",
     "jsdom": "^26.1.0",

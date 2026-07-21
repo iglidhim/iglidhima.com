@@ -344,31 +344,49 @@ textarea:focus {
   width: 100%;
 }
 
-/* Hub tile — one selectable entry per game. Contents are centred so the
-   enlarged icon is the focal point, with the name and control label stacked
-   and centred beneath it. */
+/* Hub tile — a container holding the launch button plus the vote bar. It is a
+   non-interactive wrapper (the interactive controls are its children), so it
+   carries the panel surface but no cursor/click affordance of its own. */
 .hub-card {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-md);
   padding: var(--space-lg);
-  text-align: center;
-  color: var(--color-text);
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-panel);
-  cursor: pointer;
   transition: transform 120ms ease, border-color 120ms ease,
     box-shadow 120ms ease, background-color 120ms ease;
 }
 
 .hub-card:hover {
   transform: translateY(-3px);
-  background-color: var(--color-surface-alt);
   border-color: var(--color-accent-cyan);
   box-shadow: var(--shadow-panel), var(--shadow-glow);
+}
+
+/* The launch button — the clickable area that starts the game. Fills the card
+   width and centres the icon/name/label stack (the look previously applied to
+   the whole card). Transparent background so it blends into the card surface;
+   the card's hover glow provides the affordance. */
+.hub-card__play {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-sm);
+  text-align: center;
+  color: var(--color-text);
+  background-color: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.hub-card:hover .hub-card__play {
+  background-color: var(--color-surface-alt);
 }
 
 /* Decorative per-game icon, sized here and tinted per game below. Inherits its
@@ -407,6 +425,73 @@ textarea:focus {
   font-size: var(--font-size-sm);
   text-align: center;
   color: var(--color-instructions);
+}
+
+/* --- Vote bar (global Like/Love) ------------------------------------------ */
+
+/* A centred row of reaction toggles beneath the launch button. Siblings of the
+   play button, so clicking a reaction never launches the game. */
+.hub-card__votes {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+/* One reaction toggle: glyph + count. Uses the shared surface + border tokens
+   so it themes automatically. The count text uses --color-text (>= 4.5:1 on
+   both --color-surface-alt light and dark). The global :focus-visible rule
+   provides the keyboard focus ring in both themes. */
+.vote-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease,
+    color 120ms ease;
+}
+
+.vote-btn:hover {
+  border-color: var(--color-accent-cyan);
+  background-color: var(--color-surface);
+}
+
+.vote-btn__glyph {
+  font-size: var(--font-size-base);
+  line-height: 1;
+}
+
+/* Count text — inherits the button's --color-text for AA contrast in both themes. */
+.vote-btn__count {
+  min-width: 1.5ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+/* Pressed (this browser has voted): distinct accent fill with dark-on-accent
+   text so it reads clearly and stays high-contrast in both themes. */
+.vote-btn[aria-pressed="true"] {
+  color: var(--color-text-on-accent);
+  background-color: var(--color-accent-cyan);
+  border-color: var(--color-accent-cyan);
+}
+
+.vote-btn[aria-pressed="true"] .vote-btn__count {
+  color: var(--color-text-on-accent);
+}
+
+.vote-btn[aria-pressed="true"]:hover {
+  background-color: var(--color-accent-pink);
+  border-color: var(--color-accent-pink);
 }
 
 /* --- Play_Area ------------------------------------------------------------- */

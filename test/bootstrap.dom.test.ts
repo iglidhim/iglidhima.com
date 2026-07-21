@@ -48,11 +48,12 @@ describe("arcade bootstrap smoke test", () => {
   });
 
   it("mounts the Play_Area with the Active_Game when a game is selected (Req 1.3)", async () => {
-    const firstCard = root.querySelector<HTMLButtonElement>(".hub-card");
+    const firstCard = root.querySelector<HTMLElement>(".hub-card");
     expect(firstCard).not.toBeNull();
     const selectedId = firstCard!.dataset.gameId;
 
-    firstCard!.click();
+    // The launch button (sibling of the vote bar) drives the selection.
+    firstCard!.querySelector<HTMLButtonElement>(".hub-card__play")!.click();
 
     // Selection drives the state machine to `playing` for that game.
     expect(controller.state).toEqual({ view: "playing", activeGame: selectedId });
@@ -70,7 +71,7 @@ describe("arcade bootstrap smoke test", () => {
   });
 
   it("returns to the selector and clears the Play_Area on Back-to-Hub (Req 1.5)", async () => {
-    root.querySelector<HTMLButtonElement>(".hub-card")!.click();
+    root.querySelector<HTMLButtonElement>(".hub-card__play")!.click();
     await controller.loaded;
 
     // Sanity: we are in the Play_Area.

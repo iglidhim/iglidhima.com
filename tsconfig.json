@@ -34,5 +34,9 @@
     "noImplicitReturns": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src", "test", "vite.config.ts"]
+  "include": ["src", "test", "vite.config.ts"],
+  // The Worker code and its tests are type-checked separately against the
+  // Cloudflare Workers types (see tsconfig.worker.json). Excluding them here
+  // keeps the DOM-lib client program free of Workers-global conflicts.
+  "exclude": ["src/worker", "test/worker.*.test.ts"]
 }

@@ -15,7 +15,7 @@ const BLOCKING_IMPACTS = new Set(["serious", "critical"]);
 
 /** Select the first game and wait for the Play_Area chrome to mount. */
 async function enterFirstGame(page: Page): Promise<void> {
-  await page.locator(".hub-card").first().click();
+  await page.locator(".hub-card__play").first().click();
   await page.locator(".play-area__canvas").waitFor({ state: "visible" });
   await page.locator('[data-control="start"]').waitFor({ state: "visible" });
 }
@@ -70,15 +70,16 @@ test.describe("accessibility", () => {
     await page.goto("/");
     await page.locator(".hub-card").first().waitFor();
 
-    // Tab through the document until focus lands on a hub card (keyboard reach).
+    // Tab through the document until focus lands on a hub card's play button
+    // (keyboard reach).
     let onCard = false;
     for (let i = 0; i < 10 && !onCard; i++) {
       await page.keyboard.press("Tab");
       onCard = await page.evaluate(() =>
-        document.activeElement?.classList.contains("hub-card") ?? false,
+        document.activeElement?.classList.contains("hub-card__play") ?? false,
       );
     }
-    expect(onCard, "Tab focus should reach a hub card").toBe(true);
+    expect(onCard, "Tab focus should reach a hub card play button").toBe(true);
 
     // A visible focus indicator (:focus-visible outline) is present for the
     // keyboard-focused card.
@@ -97,8 +98,8 @@ test.describe("accessibility", () => {
     await page.goto("/");
     await page.locator(".hub-card").first().waitFor();
 
-    // Keyboard-activate the first hub card to load a game.
-    await page.locator(".hub-card").first().focus();
+    // Keyboard-activate the first hub card's play button to load a game.
+    await page.locator(".hub-card__play").first().focus();
     await page.keyboard.press("Enter");
     await page.locator('[data-control="start"]').waitFor({ state: "visible" });
 

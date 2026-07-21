@@ -1,14 +1,33 @@
 {
-  // Cloudflare Workers static-assets ("assets-only") config.
+  // Cloudflare Worker + static-assets config for the arcade hub.
   //
-  // The account only offers the Workers Builds deploy flow (no classic Pages),
-  // so the Vite build output in ./dist is served directly as an assets-only
-  // Worker. There is no `main` Worker script: Cloudflare serves the static
-  // files and applies SPA fallback for client-side routing.
+  // The Worker script (src/worker/index.ts) serves a tiny same-origin JSON API
+  // for the global Like/Love voting system (GET /api/votes, POST /api/vote)
+  // backed by the KV namespace bound as `VOTES`. Every other route is delegated
+  // to the `ASSETS` binding, which serves the Vite build output in ./dist with
+  // single-page-application fallback for client-side routing.
   "name": "iglidhima-arcade",
   "compatibility_date": "2025-01-01",
+  "main": "src/worker/index.ts",
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application"
-  }
+  },
+  // KV namespace holding the anonymous aggregate vote counts.
+  //
+  // !!! PLACEHOLDER !!! The `id` below is NOT a real KV namespace id. Before
+  // deploying you MUST create a KV namespace and replace this placeholder with
+  // its real id:
+  //
+  //     npx wrangler kv namespace create VOTES
+  //
+  // then copy the printed `id` value in over PLACEHOLDER_KV_ID_REPLACE_ME.
+  // `wrangler deploy` will fail until this is a valid namespace id.
+  "kv_namespaces": [
+    {
+      "binding": "VOTES",
+      "id": "PLACEHOLDER_KV_ID_REPLACE_ME"
+    }
+  ]
 }

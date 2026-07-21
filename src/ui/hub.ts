@@ -7,23 +7,50 @@
 // shows the game's display `name` and a short control label describing its
 // primary controls.
 //
-// Every entry is a native <button> so it is keyboard-operable with the global
-// `:focus-visible` ring (Requirements 9.1, 9.2) and carries a descriptive
-// accessible name (Requirement 9.5). Selecting an entry invokes the caller's
-// `onSelect(id)` callback, which drives the hub state machine (lib/hubState.ts)
-// to `playing` and loads the chosen Game into the Play_Area.
+// Each `.hub-card` is a plain container (`<article>`) holding two sibling
+// regions so we never nest interactive controls inside one another:
+//   a) `.hub-card__play` — a native <button> holding the icon + name + control
+//      label. Activating it invokes `onSelect(id)` to launch the game. Being a
+//      native button it is keyboard-operable with the global `:focus-visible`
+//      ring (Requirements 9.1, 9.2) and carries a descriptive accessible name
+//      "Play <name>. <controls>" (Requirement 9.5).
+//   b) `.hub-card__votes` — a vote bar with two `.vote-btn` toggles (👍 like and
+//      ❤️ love), each with its own aria-label, aria-pressed reflecting this
+//      browser's stored state, and a live count. These are siblings of the play
+//      button, so a vote click can never launch the game.
+//
+// Global Like/Love counts come from the same-origin Worker API via
+// src/lib/votes.ts. The hub renders immediately with cached (localStorage
+// pressed state) + zero counts, then updates counts when `fetchAllVotes()`
+// resolves. A vote click optimistically updates the count + pressed state +
+// localStorage, then calls `sendVote()`, reverting if the request fails.
 //
 // This is a framework-free vanilla-TS factory that builds its own DOM using the
-// shared `.hub` / `.hub__title` / `.hub-grid` / `.hub-card` / `.hub-card__name`
-// / `.hub-card__label` classes defined in src/styles/global.css, keeping
-// rendering separate from game logic like the other chrome components.
+// shared `.hub` / `.hub-card` / `.hub-card__play` / `.hub-card__votes` /
+// `.vote-btn` classes defined in src/styles/global.css.
 
 import type { GameId } from "../engine/types";
 import { GAME_REGISTRY } from "../games/registry";
 import { createGameIcon } from "./gameIcons";
+import {
+  fetchAllVotes as defaultFetchAllVotes,
+  sendVote as defaultSendVote,
+  hasVoted as defaultHasVoted,
+  setVoted as defaultSetVoted,
+  voteDelta,
+  type AllVotes,
+  type Reaction,
+  type VoteCounts,
+} from "../lib/votes";
 
 /** Default heading text identifying the Site as an arcade hub. */
 const DEFAULT_TITLE = "Arcade";
+
+/** The two reactions rendered in each card's vote bar, with their glyphs. */
+const REACTION_META: ReadonlyArray<{ reaction: Reaction; glyph: string; verb: string }> = [
+  { reaction: "like", glyph: "👍", verb: "Like" },
+  { reaction: "love", glyph: "❤️", verb: "Love" },
+];
 
 /**
  * Short, static control labels shown beneath each game name in the selector.
@@ -53,6 +80,21 @@ export interface Hub {
   destroy(): void;
 }
 
+/**
+ * The vote-system dependencies the hub uses. Injectable so tests can supply
+ * mocks; defaults are the real implementations from src/lib/votes.ts.
+ */
+export interface HubVoteDeps {
+  fetchAllVotes: () => Promise<AllVotes>;
+  sendVote: (
+    gameId: GameId,
+    reaction: Reaction,
+    delta: 1 | -1,
+  ) => Promise<VoteCounts | null>;
+  hasVoted: (gameId: GameId, reaction: Reaction) => boolean;
+  setVoted: (gameId: GameId, reaction: Reaction, voted: boolean) => void;
+}
+
 export interface CreateHubOptions {
   /**
    * Invoked with the selected `GameId` when a Visitor activates a game entry,
@@ -62,19 +104,40 @@ export interface CreateHubOptions {
   onSelect: (id: GameId) => void;
   /** Optional override for the arcade heading (defaults to "Arcade"). */
   title?: string;
+  /** Optional override for the vote-system dependencies (defaults to the real module). */
+  votes?: Partial<HubVoteDeps>;
+}
+
+/** One vote button plus a small controller for optimistic updates. */
+interface VoteControl {
+  reaction: Reaction;
+  button: HTMLButtonElement;
+  countEl: HTMLElement;
+  /** The currently displayed count. */
+  count: number;
+  /** This browser's pressed state (aria-pressed). */
+  pressed: boolean;
 }
 
 /**
  * Create the Hub / Game_Selector.
  *
- * Builds a heading plus one native <button> per registered game (name + control
- * label). Each button invokes `onSelect(id)` on click; being a native button it
- * is also operable via Enter/Space with a visible focus ring (Requirements 9.1,
- * 9.2). The registry order determines display order, yielding one entry for each
- * of the four Games within the initial viewport (Requirements 1.1, 1.2).
+ * Builds a heading plus one `.hub-card` container per registered game. Each
+ * card holds a `.hub-card__play` launch button (icon + name + control label)
+ * and a `.hub-card__votes` bar with 👍/❤️ toggles. The registry order
+ * determines display order, yielding one entry for each of the four Games
+ * within the initial viewport (Requirements 1.1, 1.2).
  */
 export function createHub(options: CreateHubOptions): Hub {
   const { onSelect, title = DEFAULT_TITLE } = options;
+
+  // Resolve vote dependencies, allowing partial overrides for tests.
+  const votes: HubVoteDeps = {
+    fetchAllVotes: options.votes?.fetchAllVotes ?? defaultFetchAllVotes,
+    sendVote: options.votes?.sendVote ?? defaultSendVote,
+    hasVoted: options.votes?.hasVoted ?? defaultHasVoted,
+    setVoted: options.votes?.setVoted ?? defaultSetVoted,
+  };
 
   const root = document.createElement("section");
   root.className = "hub";
@@ -92,21 +155,31 @@ export function createHub(options: CreateHubOptions): Hub {
   grid.setAttribute("aria-label", "Choose a game");
 
   const listeners: Array<() => void> = [];
+  // Per-game vote controls, so the async fetch can populate counts by game id.
+  const controlsByGame = new Map<GameId, VoteControl[]>();
+  // Guard so a late-resolving fetch never touches a destroyed hub.
+  let destroyed = false;
 
   // Render one entry per game in registry order (Requirements 1.1, 1.2).
   for (const id of Object.keys(GAME_REGISTRY) as GameId[]) {
     const { name } = GAME_REGISTRY[id];
     const controlLabel = CONTROL_LABELS[id];
 
-    const card = document.createElement("button");
-    card.type = "button";
+    // Container is a non-interactive <article> so the play button and vote
+    // buttons are siblings, never nested interactive controls.
+    const card = document.createElement("article");
     card.className = "hub-card";
     card.dataset.gameId = id;
+
+    // --- (a) Launch button: preserves the original card click behavior. ------
+    const playBtn = document.createElement("button");
+    playBtn.type = "button";
+    playBtn.className = "hub-card__play";
     // Full accessible name so the control is self-describing (Requirement 9.5).
-    card.setAttribute("aria-label", `Play ${name}. ${controlLabel}`);
+    playBtn.setAttribute("aria-label", `Play ${name}. ${controlLabel}`);
 
     // Decorative per-game icon, rendered above the name. It is aria-hidden, so
-    // it adds visual identity without duplicating the card's accessible name.
+    // it adds visual identity without duplicating the button's accessible name.
     const icon = createGameIcon(id);
 
     const nameEl = document.createElement("span");
@@ -117,16 +190,118 @@ export function createHub(options: CreateHubOptions): Hub {
     labelEl.className = "hub-card__label";
     labelEl.textContent = controlLabel;
 
-    card.append(icon, nameEl, labelEl);
+    playBtn.append(icon, nameEl, labelEl);
 
-    const handler = (): void => onSelect(id);
-    card.addEventListener("click", handler);
-    listeners.push(() => card.removeEventListener("click", handler));
+    const playHandler = (): void => onSelect(id);
+    playBtn.addEventListener("click", playHandler);
+    listeners.push(() => playBtn.removeEventListener("click", playHandler));
 
+    // --- (b) Vote bar: 👍 like + ❤️ love toggles (siblings of the button). ---
+    const voteBar = document.createElement("div");
+    voteBar.className = "hub-card__votes";
+    voteBar.setAttribute("role", "group");
+    voteBar.setAttribute("aria-label", `React to ${name}`);
+
+    const gameControls: VoteControl[] = [];
+
+    for (const { reaction, glyph, verb } of REACTION_META) {
+      const voteBtn = document.createElement("button");
+      voteBtn.type = "button";
+      voteBtn.className = "vote-btn";
+      voteBtn.dataset.reaction = reaction;
+      voteBtn.setAttribute("aria-label", `${verb} ${name}`);
+
+      const pressed = votes.hasVoted(id, reaction);
+      voteBtn.setAttribute("aria-pressed", String(pressed));
+
+      const glyphEl = document.createElement("span");
+      glyphEl.className = "vote-btn__glyph";
+      glyphEl.setAttribute("aria-hidden", "true");
+      glyphEl.textContent = glyph;
+
+      const countEl = document.createElement("span");
+      countEl.className = "vote-btn__count";
+      countEl.textContent = "0";
+
+      voteBtn.append(glyphEl, countEl);
+
+      const control: VoteControl = {
+        reaction,
+        button: voteBtn,
+        countEl,
+        count: 0,
+        pressed,
+      };
+      gameControls.push(control);
+
+      const voteHandler = (): void => {
+        void handleVote(id, control);
+      };
+      voteBtn.addEventListener("click", voteHandler);
+      listeners.push(() => voteBtn.removeEventListener("click", voteHandler));
+
+      voteBar.appendChild(voteBtn);
+    }
+
+    controlsByGame.set(id, gameControls);
+    card.append(playBtn, voteBar);
     grid.appendChild(card);
   }
 
+  /** Reflect a control's current state into the DOM. */
+  function paint(control: VoteControl): void {
+    control.countEl.textContent = String(control.count);
+    control.button.setAttribute("aria-pressed", String(control.pressed));
+  }
+
+  /**
+   * Toggle a reaction: optimistically update the count + pressed state +
+   * localStorage, then POST. Revert the optimistic change if the POST fails.
+   */
+  async function handleVote(id: GameId, control: VoteControl): Promise<void> {
+    const prevCount = control.count;
+    const prevPressed = control.pressed;
+    const delta = voteDelta(prevPressed);
+
+    // Optimistic update.
+    control.pressed = !prevPressed;
+    control.count = Math.max(0, prevCount + delta);
+    votes.setVoted(id, control.reaction, control.pressed);
+    paint(control);
+
+    const result = await votes.sendVote(id, control.reaction, delta);
+    if (destroyed) {
+      return;
+    }
+    if (result === null) {
+      // Failure: revert the optimistic change.
+      control.pressed = prevPressed;
+      control.count = prevCount;
+      votes.setVoted(id, control.reaction, prevPressed);
+      paint(control);
+      return;
+    }
+    // Success: reconcile the displayed count with the authoritative value.
+    control.count = result[control.reaction];
+    paint(control);
+  }
+
   root.append(heading, grid);
+
+  // Kick off the aggregate fetch without blocking the initial render. When it
+  // resolves, populate each card's counts (unless the hub was destroyed first).
+  void votes.fetchAllVotes().then((all) => {
+    if (destroyed) {
+      return;
+    }
+    for (const [id, gameControls] of controlsByGame) {
+      const counts = all[id];
+      for (const control of gameControls) {
+        control.count = counts[control.reaction];
+        paint(control);
+      }
+    }
+  });
 
   return {
     element: root,
@@ -136,10 +311,12 @@ export function createHub(options: CreateHubOptions): Hub {
     },
 
     destroy(): void {
+      destroyed = true;
       for (const remove of listeners) {
         remove();
       }
       listeners.length = 0;
+      controlsByGame.clear();
       root.remove();
     },
   };
