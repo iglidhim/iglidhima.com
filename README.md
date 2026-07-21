@@ -2,7 +2,8 @@
 
 A single-page, static, browser-based arcade hub served at
 [iglidhima.com](https://iglidhima.com). It presents a hub of four original
-arcade games (Block Cascade, Serpent, Maze Muncher, Brick Buster) that run
+arcade games — displayed as Tetris, Snake, Pac-Man, and Brick Buster (the
+display names for the original in-house implementations) — that run
 entirely in the browser. There is no backend, database, account system, or
 personal-data collection: all state (per-game high scores) lives in the
 visitor's `localStorage`.

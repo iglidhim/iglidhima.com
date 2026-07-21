@@ -109,7 +109,7 @@ function fillCell(
  */
 export const serpent: GameDefinition<SerpentState, SerpentAction> = {
   id: "serpent",
-  name: "Serpent",
+  name: "Snake",
   instructions:
     "Steer the serpent with the arrow keys or WASD. Eat the food to grow and score. Avoid the walls and your own tail.",
   aspectRatio: COLS / ROWS,

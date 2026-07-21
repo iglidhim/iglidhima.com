@@ -161,7 +161,7 @@ function render(
  */
 export const blockCascade: GameDefinition<BlockCascadeState, BlockCascadeAction> = {
   id: "block-cascade",
-  name: "Block Cascade",
+  name: "Tetris",
   instructions:
     "Stack the falling blocks to complete full rows. Left/Right arrows move, " +
     "Up rotates, Down soft-drops, and Space hard-drops. Clear lines to score; " +

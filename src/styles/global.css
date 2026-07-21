@@ -344,13 +344,16 @@ textarea:focus {
   width: 100%;
 }
 
-/* Hub tile — one selectable entry per game. */
+/* Hub tile — one selectable entry per game. Contents are centred so the
+   enlarged icon is the focal point, with the name and control label stacked
+   and centred beneath it. */
 .hub-card {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--space-sm);
   padding: var(--space-lg);
-  text-align: left;
+  text-align: center;
   color: var(--color-text);
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -371,8 +374,9 @@ textarea:focus {
 /* Decorative per-game icon, sized here and tinted per game below. Inherits its
    colour via `currentColor`, so each icon picks up the accent set on its card. */
 .hub-card__icon {
-  width: 48px;
-  height: 48px;
+  width: 96px;
+  height: auto;
+  max-width: 100%;
   margin-bottom: var(--space-xs);
   color: var(--color-accent-cyan); /* default tint; overridden per game below */
   filter: drop-shadow(0 0 6px currentColor);
@@ -394,12 +398,14 @@ textarea:focus {
 
 .hub-card__name {
   font-family: var(--font-display);
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-base);
+  text-align: center;
   color: var(--color-accent-cyan);
 }
 
 .hub-card__label {
   font-size: var(--font-size-sm);
+  text-align: center;
   color: var(--color-instructions);
 }
 

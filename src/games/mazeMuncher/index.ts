@@ -135,7 +135,7 @@ const BOARD_ROWS = initialBoard.length || 1;
  */
 export const mazeMuncher: GameDefinition<MazeState, MazeMuncherAction> = {
   id: "maze-muncher",
-  name: "Maze Muncher",
+  name: "Pac-Man",
   instructions:
     "Use the arrow keys or WASD to navigate the maze. Collect every pellet to win, but don't let the pursuers catch you.",
   aspectRatio: BOARD_COLS / BOARD_ROWS,

@@ -48,6 +48,23 @@ describe("createHub", () => {
     labels.forEach((el) => expect(el.textContent?.trim().length).toBeGreaterThan(0));
   });
 
+  it("renders the current display names (Tetris, Snake, Pac-Man, Brick Buster)", () => {
+    const hub = createHub({ onSelect: () => {} });
+    hub.mount(host);
+
+    const renderedNames = Array.from(
+      host.querySelectorAll(".hub-card__name"),
+    ).map((el) => el.textContent);
+    expect(renderedNames).toEqual(["Tetris", "Snake", "Pac-Man", "Brick Buster"]);
+
+    // The accessible name of each card is built from the display name, so the
+    // card announces "Play <name>. ..." for assistive tech (Requirement 9.5).
+    const tetrisCard = host.querySelector<HTMLButtonElement>(
+      '.hub-card[data-game-id="block-cascade"]',
+    );
+    expect(tetrisCard?.getAttribute("aria-label")).toMatch(/^Play Tetris\. /);
+  });
+
   it("renders a distinct decorative SVG icon inside each card (aria-hidden)", () => {
     const hub = createHub({ onSelect: () => {} });
     hub.mount(host);

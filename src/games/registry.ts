@@ -21,17 +21,17 @@ export const GAME_REGISTRY: Record<
   }
 > = {
   "block-cascade": {
-    name: "Block Cascade",
+    name: "Tetris",
     loader: async () =>
       (await import("./blockCascade/index")).blockCascade as unknown as AnyGameDefinition,
   },
   serpent: {
-    name: "Serpent",
+    name: "Snake",
     loader: async () =>
       (await import("./serpent/index")).serpent as unknown as AnyGameDefinition,
   },
   "maze-muncher": {
-    name: "Maze Muncher",
+    name: "Pac-Man",
     loader: async () =>
       (await import("./mazeMuncher/index")).mazeMuncher as unknown as AnyGameDefinition,
   },
