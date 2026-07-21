@@ -5,6 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Document title identifies the Site as an arcade hub (Requirement 9.4). -->
     <title>Arcade Hub</title>
+    <!--
+      No-flash theme init: apply the correct light/dark palette synchronously,
+      before the stylesheet and app load, so the first paint matches the
+      persisted/preferred theme (no dark->light flash). This is a tiny,
+      dependency-free duplicate of src/lib/theme.ts's resolve logic; keep the
+      THEME_KEY in sync with that module.
+    -->
+    <script>
+      (function () {
+        try {
+          var KEY = "iglidhima.arcade.theme";
+          var stored = null;
+          try {
+            stored = localStorage.getItem(KEY);
+          } catch (e) {
+            stored = null;
+          }
+          var theme;
+          if (stored === "light" || stored === "dark") {
+            theme = stored;
+          } else {
+            var prefersDark =
+              typeof window.matchMedia === "function" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches;
+            theme = prefersDark ? "dark" : "light";
+          }
+          document.documentElement.dataset.theme = theme;
+        } catch (e) {
+          document.documentElement.dataset.theme = "dark";
+        }
+      })();
+    </script>
     <link rel="stylesheet" href="/src/styles/global.css" />
   </head>
   <body>

@@ -82,6 +82,85 @@
   --breakpoint-desktop: 1024px;
 }
 
+/* ============================================================================
+   Themes
+   ----------------------------------------------------------------------------
+   The DARK palette above (under :root) is the default, so the Site renders
+   correctly even if JS never runs. `[data-theme="dark"]` restates it so both
+   selectors resolve to the same dark palette, and `[data-theme="light"]`
+   provides a light palette.
+
+   Theme selection is driven by `<html data-theme="light|dark">`, set
+   synchronously by the no-flash inline script in index.html and by
+   src/lib/theme.ts (initTheme / the toggle).
+
+   Light-mode text safety: the neon cyan/yellow/green/pink accents are far too
+   light to use as text on white surfaces, so the light palette below swaps in
+   DARKER accent variants for the accent + semantic-text tokens. Every text
+   token (score, high-score, labels, instructions, hub-card names, headings)
+   then meets WCAG AA >= 4.5:1 against the light surfaces (verified against the
+   white `--color-surface`, the darkest text background):
+     --color-text        #14192e on #ffffff  ~15:1
+     --color-text-muted  #4a5578 on #ffffff  ~7.3:1  (instructions, captions)
+     --color-accent-cyan #0e7490 on #ffffff  ~5.4:1  (names, headings, links)
+     --color-score       #7a5d00 on #ffffff  ~6.0:1  (Score display)
+     --color-high-score  #157f3b on #ffffff  ~5.1:1  (High_Score display)
+     --color-accent-pink #b5197f on #ffffff  ~6.1:1
+   The neon accents are retained only for non-text decoration in dark mode; in
+   light mode the darker variants also keep the decorative hub-card icons and
+   focus ring clearly visible.
+   ============================================================================ */
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-bg: #0a0e1a;
+  --color-surface: #141a2e;
+  --color-surface-alt: #1d2540;
+  --color-border: #2c3557;
+
+  --color-accent-cyan: #35e0f2;
+  --color-accent-pink: #ff6ec7;
+  --color-accent-yellow: #ffe14d;
+  --color-accent-green: #4ade80;
+
+  --color-text: #f5f7fa;
+  --color-text-muted: #b8c1d9;
+  --color-text-on-accent: #0a0e1a;
+
+  --color-score: var(--color-accent-yellow);
+  --color-high-score: var(--color-accent-green);
+  --color-label: var(--color-text);
+  --color-instructions: var(--color-text-muted);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Light surfaces: page bg slightly tinted, panels/cards pure white. */
+  --color-bg: #eef1f7;
+  --color-surface: #ffffff;
+  --color-surface-alt: #e3e8f4;
+  --color-border: #cbd3e6;
+
+  /* Darker accent variants — safe for text on white (see table above). */
+  --color-accent-cyan: #0e7490;
+  --color-accent-pink: #b5197f;
+  --color-accent-yellow: #7a5d00;
+  --color-accent-green: #157f3b;
+
+  /* Dark text on light surfaces. */
+  --color-text: #14192e;
+  --color-text-muted: #4a5578;
+  /* Bright accents become dark in light mode, so on-accent text is now light. */
+  --color-text-on-accent: #ffffff;
+
+  --color-score: var(--color-accent-yellow);
+  --color-high-score: var(--color-accent-green);
+  --color-label: var(--color-text);
+  --color-instructions: var(--color-text-muted);
+}
+
 /* ----------------------------------------------------------------------------
    Reset / base
    ---------------------------------------------------------------------------- */
@@ -193,6 +272,51 @@ textarea:focus {
   flex-direction: column;
   gap: var(--space-lg);
   min-height: 100vh;
+}
+
+/* --- Persistent header bar ------------------------------------------------- */
+
+/* Thin bar above the container, visible on both the Hub and Play views. Holds
+   the theme toggle, right-aligned. Padding uses the shared spacing tokens and
+   is capped to the same max-width as the content for alignment. */
+.arcade-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+  max-width: var(--container-max-width);
+  margin-inline: auto;
+  padding: var(--space-md) var(--space-md) 0;
+}
+
+/* Icon button that flips the light/dark theme. ~40px square, borrows the
+   .btn-like surface affordance, and relies on the global :focus-visible ring
+   for a visible keyboard focus indicator in both themes. */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  color: var(--color-text);
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease,
+    color 120ms ease;
+}
+
+.theme-toggle:hover {
+  border-color: var(--color-accent-cyan);
+  background-color: var(--color-surface);
+  color: var(--color-accent-cyan);
+}
+
+.theme-toggle__icon {
+  width: 22px;
+  height: 22px;
 }
 
 /* --- Hub / Game_Selector grid --------------------------------------------- */

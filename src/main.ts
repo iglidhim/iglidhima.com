@@ -22,8 +22,10 @@
 
 import type { GameId } from "./engine/types";
 import { initialHubState, selectGame, returnToHub, type HubState } from "./lib/hubState";
+import { initTheme } from "./lib/theme";
 import { createHub, type Hub } from "./ui/hub";
 import { createPlayArea, type PlayArea } from "./ui/playArea";
+import { createThemeToggle, type ThemeToggle } from "./ui/themeToggle";
 
 /**
  * A handle to a running arcade instance, returned by {@link initArcade}. It
@@ -65,6 +67,15 @@ export function initArcade(root: HTMLElement): ArcadeController {
   // active view (Hub or Play_Area) mounts (Requirements 8.1, 8.2).
   const layout = document.createElement("main");
   layout.className = "arcade-layout";
+
+  // Persistent header bar, built once so it survives Hub <-> Play_Area view
+  // swaps (the swaps only replace `container`'s contents). Hosts the theme
+  // toggle, right-aligned, visible on both the Hub and Play views.
+  const header = document.createElement("header");
+  header.className = "arcade-header";
+  const themeToggle: ThemeToggle = createThemeToggle();
+  themeToggle.mount(header);
+  layout.appendChild(header);
 
   const container = document.createElement("div");
   container.className = "arcade-container";
@@ -164,6 +175,7 @@ export function initArcade(root: HTMLElement): ArcadeController {
     destroy(): void {
       teardownPlayArea();
       teardownHub();
+      themeToggle.destroy();
       layout.remove();
     },
   };
@@ -175,5 +187,10 @@ export function initArcade(root: HTMLElement): ArcadeController {
 // always provides `#app`, so runtime behavior there is unchanged.
 const app = document.querySelector<HTMLDivElement>("#app");
 if (app) {
+  // Resolve and apply the initial theme before rendering any chrome, so the
+  // theme toggle and layout pick up the correct palette from the start. The
+  // no-flash inline script in index.html has already applied it for first
+  // paint; this re-confirms it via the shared resolve logic.
+  initTheme();
   initArcade(app);
 }
