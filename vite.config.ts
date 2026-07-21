@@ -1,5 +1,5 @@
 /// <reference types="vitest/config" />
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 
 // Static build config for the arcade hub.
 // `vite build` emits a static `dist/` bundle that Cloudflare Pages serves
