@@ -1,8 +1,0 @@
-# Cloudflare Pages redirect rules.
-# Files in public/ are copied verbatim into dist/ at build time, so this file
-# lands at the root of the deployed output where Cloudflare Pages reads it.
-#
-# Canonical redirect: www subdomain -> apex domain (Requirement 12.2).
-# HTTP->HTTPS, TLS, and asset compression are handled by the Cloudflare
-# platform and do not need rules here (Requirements 10.3, 11.4, 12.3, 12.4).
-https://www.iglidhima.com/* https://iglidhima.com/:splat 301

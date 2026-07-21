@@ -58,11 +58,8 @@ redirected to HTTPS by the platform (Requirement 12.3).
 
 ### Redirects
 
-`public/_redirects` defines the canonical `www` -> apex redirect
-(Requirement 12.2). Vite copies everything in `public/` verbatim into `dist/`
-at build time, so `_redirects` lands at the root of the deployed output where
-Cloudflare Pages reads it:
-
-```
-https://www.iglidhima.com/* https://iglidhima.com/:splat 301
-```
+The canonical `www` -> apex redirect (Requirement 12.2) is configured as a
+Cloudflare **Redirect Rule** at the domain level (Rules -> Redirect Rules),
+not as a `_redirects` file. Workers static assets only allow relative URLs in
+`_redirects`, so a cross-hostname `www.iglidhima.com` -> `iglidhima.com` rule
+must live in a domain-level Redirect Rule instead.
