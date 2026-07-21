@@ -20,6 +20,7 @@
 
 import type { GameId } from "../engine/types";
 import { GAME_REGISTRY } from "../games/registry";
+import { createGameIcon } from "./gameIcons";
 
 /** Default heading text identifying the Site as an arcade hub. */
 const DEFAULT_TITLE = "Arcade";
@@ -104,6 +105,10 @@ export function createHub(options: CreateHubOptions): Hub {
     // Full accessible name so the control is self-describing (Requirement 9.5).
     card.setAttribute("aria-label", `Play ${name}. ${controlLabel}`);
 
+    // Decorative per-game icon, rendered above the name. It is aria-hidden, so
+    // it adds visual identity without duplicating the card's accessible name.
+    const icon = createGameIcon(id);
+
     const nameEl = document.createElement("span");
     nameEl.className = "hub-card__name";
     nameEl.textContent = name;
@@ -112,7 +117,7 @@ export function createHub(options: CreateHubOptions): Hub {
     labelEl.className = "hub-card__label";
     labelEl.textContent = controlLabel;
 
-    card.append(nameEl, labelEl);
+    card.append(icon, nameEl, labelEl);
 
     const handler = (): void => onSelect(id);
     card.addEventListener("click", handler);

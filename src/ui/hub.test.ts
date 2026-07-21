@@ -48,6 +48,31 @@ describe("createHub", () => {
     labels.forEach((el) => expect(el.textContent?.trim().length).toBeGreaterThan(0));
   });
 
+  it("renders a distinct decorative SVG icon inside each card (aria-hidden)", () => {
+    const hub = createHub({ onSelect: () => {} });
+    hub.mount(host);
+
+    const cards = host.querySelectorAll<HTMLButtonElement>(".hub-card");
+    expect(cards).toHaveLength(4);
+
+    cards.forEach((card) => {
+      const icon = card.querySelector("svg");
+      expect(icon).not.toBeNull();
+      if (!icon) return;
+      // Decorative: hidden from assistive tech and not focusable.
+      expect(icon.getAttribute("aria-hidden")).toBe("true");
+      expect(icon.getAttribute("focusable")).toBe("false");
+      expect(icon.classList.contains("hub-card__icon")).toBe(true);
+      // The icon is rendered above the game name within the card.
+      const name = card.querySelector(".hub-card__name");
+      expect(name).not.toBeNull();
+      expect(
+        icon.compareDocumentPosition(name as Node) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+  });
+
   it("renders each entry as a native, accessible-labelled <button> (Req 9.1, 9.2, 9.5)", () => {
     const hub = createHub({ onSelect: () => {} });
     hub.mount(host);

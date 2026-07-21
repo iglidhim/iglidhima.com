@@ -244,6 +244,30 @@ textarea:focus {
   box-shadow: var(--shadow-panel), var(--shadow-glow);
 }
 
+/* Decorative per-game icon, sized here and tinted per game below. Inherits its
+   colour via `currentColor`, so each icon picks up the accent set on its card. */
+.hub-card__icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--space-xs);
+  color: var(--color-accent-cyan); /* default tint; overridden per game below */
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+/* Per-game accent tints, staying within the existing neon palette. */
+.hub-card[data-game-id="block-cascade"] .hub-card__icon {
+  color: var(--color-accent-cyan);
+}
+.hub-card[data-game-id="serpent"] .hub-card__icon {
+  color: var(--color-accent-green);
+}
+.hub-card[data-game-id="maze-muncher"] .hub-card__icon {
+  color: var(--color-accent-yellow);
+}
+.hub-card[data-game-id="brick-buster"] .hub-card__icon {
+  color: var(--color-accent-pink);
+}
+
 .hub-card__name {
   font-family: var(--font-display);
   font-size: var(--font-size-lg);
