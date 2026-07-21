@@ -15,19 +15,11 @@
     "not_found_handling": "single-page-application"
   },
   // KV namespace holding the anonymous aggregate vote counts.
-  //
-  // !!! PLACEHOLDER !!! The `id` below is NOT a real KV namespace id. Before
-  // deploying you MUST create a KV namespace and replace this placeholder with
-  // its real id:
-  //
-  //     npx wrangler kv namespace create VOTES
-  //
-  // then copy the printed `id` value in over PLACEHOLDER_KV_ID_REPLACE_ME.
-  // `wrangler deploy` will fail until this is a valid namespace id.
+  // `id` is the VOTES KV namespace id.
   "kv_namespaces": [
     {
       "binding": "VOTES",
-      "id": "PLACEHOLDER_KV_ID_REPLACE_ME"
+      "id": "f24f38f002654cb6b9d0319bb8c8720a"
     }
   ]
 }
