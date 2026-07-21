@@ -26,12 +26,14 @@ import {
   selectGame,
   returnToHub,
   openFamilyCorner,
+  openChess,
   type HubState,
 } from "./lib/hubState";
 import { initTheme } from "./lib/theme";
 import { createHub, type Hub } from "./ui/hub";
 import { createPlayArea, type PlayArea } from "./ui/playArea";
 import { createFamilyCorner, type FamilyCorner } from "./ui/familyCorner";
+import { createChess, type Chess } from "./ui/chess";
 import { createParentInbox, type ParentInbox } from "./ui/parentInbox";
 import { createThemeToggle, type ThemeToggle } from "./ui/themeToggle";
 
@@ -43,7 +45,7 @@ import { createThemeToggle, type ThemeToggle } from "./ui/themeToggle";
  * unused — the Site simply boots and runs.
  */
 export interface ArcadeController {
-  /** The current pure hub view state (`hub` | `playing` | `family-corner`). */
+  /** The current pure hub view state (`hub` | `playing` | `family-corner` | `chess`). */
   readonly state: HubState;
   /** The live Hub view when on the selector, else `null`. */
   readonly hub: Hub | null;
@@ -51,6 +53,8 @@ export interface ArcadeController {
   readonly playArea: PlayArea | null;
   /** The live Family_Corner view when open, else `null`. */
   readonly familyCorner: FamilyCorner | null;
+  /** The live Chess view when open, else `null`. */
+  readonly chess: Chess | null;
   /**
    * The in-flight (or settled) promise for the current game-module load, or
    * `null` when showing the Hub. Awaiting it lets callers wait until the
@@ -100,6 +104,7 @@ export function initArcade(root: HTMLElement): ArcadeController {
   let hub: Hub | null = null;
   let playArea: PlayArea | null = null;
   let familyCorner: FamilyCorner | null = null;
+  let chess: Chess | null = null;
   // The current game-module load promise while playing (null on the Hub).
   let loaded: Promise<void> | null = null;
 
@@ -130,15 +135,26 @@ export function initArcade(root: HTMLElement): ArcadeController {
     familyCorner = null;
   }
 
+  /**
+   * Tear down the Chess view if mounted. Destroying it cancels any pending
+   * computer move, detaches every listener, and clears the Chess DOM.
+   */
+  function teardownChess(): void {
+    chess?.destroy();
+    chess = null;
+  }
+
   /** Render the Hub / Game_Selector as the sole view (Requirement 1.1). */
   function renderHub(): void {
     teardownPlayArea();
     teardownFamilyCorner();
+    teardownChess();
     teardownHub();
 
     hub = createHub({
       onSelect: handleSelect,
       onOpenFamilyCorner: handleOpenFamilyCorner,
+      onOpenChess: handleOpenChess,
     });
     hub.mount(container);
   }
@@ -151,6 +167,7 @@ export function initArcade(root: HTMLElement): ArcadeController {
   function renderGame(id: GameId): void {
     teardownHub();
     teardownFamilyCorner();
+    teardownChess();
     teardownPlayArea();
 
     playArea = createPlayArea({
@@ -175,10 +192,28 @@ export function initArcade(root: HTMLElement): ArcadeController {
   function renderFamilyCorner(): void {
     teardownHub();
     teardownPlayArea();
+    teardownChess();
     teardownFamilyCorner();
 
     familyCorner = createFamilyCorner({ onBackToHub: handleBackToHub });
     familyCorner.mount(container);
+  }
+
+  /**
+   * Mount the Chess play view as the sole view (parallel to
+   * {@link renderFamilyCorner}). Tears down any live Hub / Play_Area /
+   * Family_Corner first, so exactly one view occupies the shared
+   * `.arcade-container` at a time (no leaks). The persistent header + theme
+   * toggle are untouched, so Chess inherits the current light/dark theme.
+   */
+  function renderChess(): void {
+    teardownHub();
+    teardownPlayArea();
+    teardownFamilyCorner();
+    teardownChess();
+
+    chess = createChess({ onBackToHub: handleBackToHub });
+    chess.mount(container);
   }
 
   /**
@@ -210,6 +245,17 @@ export function initArcade(root: HTMLElement): ArcadeController {
     renderFamilyCorner();
   }
 
+  /**
+   * Handle the Hub's Chess entry: transition to `chess` and mount the play
+   * view (parallel to {@link handleOpenFamilyCorner}). Chess's own Back-to-Hub
+   * control reuses {@link handleBackToHub}, returning via `returnToHub` and
+   * re-rendering the Hub.
+   */
+  function handleOpenChess(): void {
+    state = openChess(state);
+    renderChess();
+  }
+
   // Initial render: the Site loads showing the Hub (Requirement 1.1).
   renderHub();
 
@@ -226,12 +272,16 @@ export function initArcade(root: HTMLElement): ArcadeController {
     get familyCorner() {
       return familyCorner;
     },
+    get chess() {
+      return chess;
+    },
     get loaded() {
       return loaded;
     },
     destroy(): void {
       teardownPlayArea();
       teardownFamilyCorner();
+      teardownChess();
       teardownHub();
       themeToggle.destroy();
       layout.remove();

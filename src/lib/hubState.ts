@@ -7,7 +7,8 @@ import type { GameId } from "../engine/types";
 export type HubState =
   | { view: "hub" }
   | { view: "playing"; activeGame: GameId }
-  | { view: "family-corner" };
+  | { view: "family-corner" }
+  | { view: "chess" };
 
 /** The initial hub state, showing the Game_Selector. */
 export const initialHubState: HubState = { view: "hub" };
@@ -44,4 +45,17 @@ export function returnToHub(_state: HubState): HubState {
  */
 export function openFamilyCorner(_state: HubState): HubState {
   return { view: "family-corner" };
+}
+
+/**
+ * Open the Chess game, entering its play experience.
+ *
+ * From any prior view (`hub`, `playing`, `family-corner`, or `chess`), this
+ * pure transition yields the `chess` view (mirroring {@link openFamilyCorner}).
+ * Mounting/tearing down the Chess UI is a side effect wired in `main.ts`; this
+ * module models only the pure view transition. `returnToHub` returns from the
+ * chess view to the hub like any other view.
+ */
+export function openChess(_state: HubState): HubState {
+  return { view: "chess" };
 }

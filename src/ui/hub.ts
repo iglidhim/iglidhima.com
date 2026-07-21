@@ -112,6 +112,13 @@ export interface CreateHubOptions {
    * view (Requirements 1.1, 1.2). When omitted, the entry is not rendered.
    */
   onOpenFamilyCorner?: () => void;
+  /**
+   * Invoked when a Visitor activates the Chess entry, so the caller can drive
+   * the hub state machine to `chess` and mount the Chess view (parallel to
+   * {@link CreateHubOptions.onOpenFamilyCorner}). When omitted, the entry is
+   * not rendered.
+   */
+  onOpenChess?: () => void;
 }
 
 /** One vote button plus a small controller for optimistic updates. */
@@ -135,7 +142,7 @@ interface VoteControl {
  * within the initial viewport (Requirements 1.1, 1.2).
  */
 export function createHub(options: CreateHubOptions): Hub {
-  const { onSelect, title = DEFAULT_TITLE, onOpenFamilyCorner } = options;
+  const { onSelect, title = DEFAULT_TITLE, onOpenFamilyCorner, onOpenChess } = options;
 
   // Resolve vote dependencies, allowing partial overrides for tests.
   const votes: HubVoteDeps = {
@@ -334,6 +341,46 @@ export function createHub(options: CreateHubOptions): Hub {
 
     familyNav.appendChild(familyBtn);
     root.appendChild(familyNav);
+  }
+
+  // --- Chess entry ----------------------------------------------------------
+  // A navigational destination distinct from the four game cards and the Family
+  // Corner entry: it opens the Chess play experience (vs computer or a friend)
+  // rather than launching a canvas arcade game. Rendered as its own native
+  // <button> in a separate section so it reads as a different kind of
+  // destination. Only rendered when the caller wires `onOpenChess`.
+  if (onOpenChess) {
+    const chessNav = document.createElement("nav");
+    chessNav.className = "hub__chess-nav";
+    chessNav.setAttribute("aria-label", "Chess");
+
+    const chessBtn = document.createElement("button");
+    chessBtn.type = "button";
+    chessBtn.className = "hub__chess";
+    // Self-describing accessible name (Requirement 9.5-style labelling).
+    chessBtn.setAttribute("aria-label", "Chess. Play vs computer or a friend");
+
+    const chessGlyph = document.createElement("span");
+    chessGlyph.className = "hub__chess-glyph";
+    chessGlyph.setAttribute("aria-hidden", "true");
+    chessGlyph.textContent = "\u265E"; // black knight ♞
+
+    const chessName = document.createElement("span");
+    chessName.className = "hub__chess-name";
+    chessName.textContent = "Chess";
+
+    const chessLabel = document.createElement("span");
+    chessLabel.className = "hub__chess-label";
+    chessLabel.textContent = "Play vs computer or a friend";
+
+    chessBtn.append(chessGlyph, chessName, chessLabel);
+
+    const chessHandler = (): void => onOpenChess();
+    chessBtn.addEventListener("click", chessHandler);
+    listeners.push(() => chessBtn.removeEventListener("click", chessHandler));
+
+    chessNav.appendChild(chessBtn);
+    root.appendChild(chessNav);
   }
 
   // Kick off the aggregate fetch without blocking the initial render. When it

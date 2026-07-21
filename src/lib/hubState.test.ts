@@ -4,6 +4,7 @@ import {
   selectGame,
   returnToHub,
   openFamilyCorner,
+  openChess,
   type HubState,
 } from "./hubState";
 import type { GameId } from "../engine/types";
@@ -22,6 +23,7 @@ const hubStateArb: fc.Arbitrary<HubState> = fc.oneof(
   fc.constant<HubState>({ view: "hub" }),
   gameIdArb.map<HubState>((activeGame) => ({ view: "playing", activeGame })),
   fc.constant<HubState>({ view: "family-corner" }),
+  fc.constant<HubState>({ view: "chess" }),
 );
 
 describe("hubState", () => {
@@ -84,5 +86,28 @@ describe("hubState", () => {
       }),
       { numRuns: 100 },
     );
+  });
+
+  // Feature: chess, View transition into the Chess game (hub -> chess)
+  it("openChess yields the chess view from any prior state", () => {
+    fc.assert(
+      fc.property(hubStateArb, (state) => {
+        const result = openChess(state);
+
+        // From any prior view (hub, playing, family-corner, or chess), the pure
+        // transition always yields the chess view.
+        expect(result).toEqual({ view: "chess" });
+        expect(result.view).toBe("chess");
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  // Feature: chess, Returning to the Hub from the Chess game (chess -> hub)
+  it("returnToHub yields the hub view from the chess view", () => {
+    const chess: HubState = { view: "chess" };
+    const result = returnToHub(chess);
+    expect(result).toEqual({ view: "hub" });
+    expect(result.view).toBe("hub");
   });
 });

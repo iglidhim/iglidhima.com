@@ -252,6 +252,86 @@ describe("createHub — Family Corner entry", () => {
   });
 });
 
+describe("createHub — Chess entry", () => {
+  let host: HTMLElement;
+
+  beforeEach(() => {
+    document.body.innerHTML = "";
+    host = document.createElement("div");
+    document.body.appendChild(host);
+  });
+
+  it("renders a Chess entry distinct from the game cards when the callback is provided", () => {
+    const hub = createHub({
+      onSelect: () => {},
+      onOpenChess: () => {},
+      votes: stubVoteDeps(),
+    });
+    hub.mount(host);
+
+    const entry = host.querySelector<HTMLButtonElement>(".hub__chess");
+    expect(entry).not.toBeNull();
+    expect(entry?.tagName).toBe("BUTTON");
+    expect(entry?.type).toBe("button");
+    expect(entry?.getAttribute("aria-label")?.length).toBeGreaterThan(0);
+    // It is not one of the four game cards.
+    expect(entry?.classList.contains("hub-card")).toBe(false);
+    expect(host.querySelectorAll(".hub-card")).toHaveLength(4);
+  });
+
+  it("omits the Chess entry when no callback is provided", () => {
+    const hub = createHub({ onSelect: () => {}, votes: stubVoteDeps() });
+    hub.mount(host);
+
+    expect(host.querySelector(".hub__chess")).toBeNull();
+  });
+
+  it("invokes onOpenChess when the entry is activated", () => {
+    let opened = 0;
+    const hub = createHub({
+      onSelect: () => {},
+      onOpenChess: () => {
+        opened += 1;
+      },
+      votes: stubVoteDeps(),
+    });
+    hub.mount(host);
+
+    host.querySelector<HTMLButtonElement>(".hub__chess")?.click();
+    expect(opened).toBe(1);
+  });
+
+  it("activating the Chess entry does not launch a game", () => {
+    const selected: GameId[] = [];
+    const hub = createHub({
+      onSelect: (id) => selected.push(id),
+      onOpenChess: () => {},
+      votes: stubVoteDeps(),
+    });
+    hub.mount(host);
+
+    host.querySelector<HTMLButtonElement>(".hub__chess")?.click();
+    expect(selected).toEqual([]);
+  });
+
+  it("cleans up the entry's listener on destroy", () => {
+    let opened = 0;
+    const hub = createHub({
+      onSelect: () => {},
+      onOpenChess: () => {
+        opened += 1;
+      },
+      votes: stubVoteDeps(),
+    });
+    hub.mount(host);
+    const entry = host.querySelector<HTMLButtonElement>(".hub__chess");
+
+    hub.destroy();
+    entry?.click();
+    expect(opened).toBe(0);
+  });
+});
+
 describe("createHub — vote bar", () => {
   let host: HTMLElement;
 
