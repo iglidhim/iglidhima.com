@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "deploy": "wrangler deploy"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
@@ -19,6 +20,7 @@
     "jsdom": "^26.1.0",
     "typescript": "^5.4.5",
     "vite": "^6.0.0",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "wrangler": "^4.0.0"
   }
 }

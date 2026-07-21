@@ -1,0 +1,14 @@
+{
+  // Cloudflare Workers static-assets ("assets-only") config.
+  //
+  // The account only offers the Workers Builds deploy flow (no classic Pages),
+  // so the Vite build output in ./dist is served directly as an assets-only
+  // Worker. There is no `main` Worker script: Cloudflare serves the static
+  // files and applies SPA fallback for client-side routing.
+  "name": "iglidhima-arcade",
+  "compatibility_date": "2025-01-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
