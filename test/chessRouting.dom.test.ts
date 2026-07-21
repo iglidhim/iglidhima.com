@@ -29,14 +29,20 @@ describe("Chess routing via initArcade", () => {
 
   it("renders a Chess entry on the Hub at boot", () => {
     expect(controller.state).toEqual({ view: "hub" });
-    expect(root.querySelector(".hub__chess")).not.toBeNull();
+    expect(
+      root.querySelector('.hub-card[data-game-id="chess"] .hub-card__play'),
+    ).not.toBeNull();
     // No Chess view is mounted until the entry is activated.
     expect(root.querySelector(".chess")).toBeNull();
     expect(controller.chess).toBeNull();
   });
 
   it("activating the entry transitions to the chess view and mounts it", () => {
-    root.querySelector<HTMLButtonElement>(".hub__chess")!.click();
+    root
+      .querySelector<HTMLButtonElement>(
+        '.hub-card[data-game-id="chess"] .hub-card__play',
+      )!
+      .click();
 
     expect(controller.state).toEqual({ view: "chess" });
     expect(controller.chess).not.toBeNull();
@@ -52,7 +58,11 @@ describe("Chess routing via initArcade", () => {
   });
 
   it("returns to the Hub from the Chess view's Back-to-Hub control", () => {
-    root.querySelector<HTMLButtonElement>(".hub__chess")!.click();
+    root
+      .querySelector<HTMLButtonElement>(
+        '.hub-card[data-game-id="chess"] .hub-card__play',
+      )!
+      .click();
     expect(root.querySelector(".chess")).not.toBeNull();
 
     const back = root.querySelector<HTMLButtonElement>(".chess__back");
@@ -63,6 +73,8 @@ describe("Chess routing via initArcade", () => {
     expect(controller.chess).toBeNull();
     expect(root.querySelector(".chess")).toBeNull();
     expect(root.querySelector(".hub")).not.toBeNull();
-    expect(root.querySelector(".hub__chess")).not.toBeNull();
+    expect(
+      root.querySelector('.hub-card[data-game-id="chess"] .hub-card__play'),
+    ).not.toBeNull();
   });
 });

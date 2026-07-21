@@ -413,6 +413,9 @@ textarea:focus {
 .hub-card[data-game-id="brick-buster"] .hub-card__icon {
   color: var(--color-accent-pink);
 }
+.hub-card[data-game-id="chess"] .hub-card__icon {
+  color: var(--color-accent-cyan);
+}
 
 .hub-card__name {
   font-family: var(--font-display);
@@ -1335,7 +1338,8 @@ textarea:focus {
 /* ============================================================================
    Chess (Wave 2)
    ----------------------------------------------------------------------------
-   The Chess play view (createChess) and its Hub entry (.hub__chess). Layout and
+   The Chess play view (createChess). Its Hub entry is now a standard
+   `.hub-card` (the 5th card in the grid). Layout and
    controls consume the shared theme tokens (--color-*, --space-*, --radius-*,
    …) so light/dark and the theme toggle apply for free. The board itself uses a
    self-contained wood palette (the same in both themes) chosen so the Unicode
@@ -1350,60 +1354,10 @@ textarea:focus {
    operable via the global :focus-visible ring.
    ============================================================================ */
 
-/* --- Hub Chess entry ------------------------------------------------------- */
-
-/* A navigational destination distinct from the game cards and the Family Corner
-   entry. Sits below the grid and opens the Chess play experience. Uses the cyan
-   accent to sit alongside the arcade's primary accent while reading as its own
-   destination. */
-.hub__chess-nav {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-}
-
-.hub__chess {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-xs);
-  width: 100%;
-  min-height: 44px;
-  padding: var(--space-md) var(--space-lg);
-  text-align: center;
-  color: var(--color-text);
-  background-color: var(--color-surface);
-  border: 1px dashed var(--color-accent-cyan);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-panel);
-  cursor: pointer;
-  transition: transform 120ms ease, border-color 120ms ease,
-    box-shadow 120ms ease, background-color 120ms ease;
-}
-
-.hub__chess:hover {
-  transform: translateY(-3px);
-  border-color: var(--color-accent-cyan);
-  background-color: var(--color-surface-alt);
-  box-shadow: var(--shadow-panel), var(--shadow-glow);
-}
-
-.hub__chess-glyph {
-  font-size: var(--font-size-2xl);
-  line-height: 1;
-  color: var(--color-accent-cyan);
-}
-
-.hub__chess-name {
-  font-family: var(--font-display);
-  font-size: var(--font-size-lg);
-  color: var(--color-accent-cyan);
-}
-
-.hub__chess-label {
-  font-size: var(--font-size-sm);
-  color: var(--color-instructions);
-}
+/* The Chess Hub entry is now the 5th `.hub-card` in the grid (built by
+   createHub), so it reuses all the shared `.hub-card` / `.hub-card__play` /
+   `.hub-card__votes` styles automatically. Only its per-card icon tint is
+   defined, alongside the other games' tints (see the Hub section above). */
 
 /* --- Chess view root ------------------------------------------------------- */
 

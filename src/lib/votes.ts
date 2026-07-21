@@ -18,24 +18,35 @@
 
 import type { GameId } from "../engine/types";
 
+/**
+ * A votable target: any of the four canvas games plus the Chess destination.
+ *
+ * Chess is not a `GameId` (it is not part of the canvas-game contract), but it
+ * gets its own global Like/Love counts alongside the games, so the vote system
+ * is keyed by this wider id. New `chess` counts default to 0, so this is fully
+ * backward compatible with the existing game counts.
+ */
+export type VoteTargetId = GameId | "chess";
+
 /** The two reactions, each with its own independent global count. */
 export type Reaction = "like" | "love";
 
-/** Per-game vote counts. */
+/** Per-target vote counts. */
 export interface VoteCounts {
   like: number;
   love: number;
 }
 
-/** Aggregate counts for every game, keyed by GameId. */
-export type AllVotes = Record<GameId, VoteCounts>;
+/** Aggregate counts for every votable target, keyed by VoteTargetId. */
+export type AllVotes = Record<VoteTargetId, VoteCounts>;
 
-/** The four known games, in registry order. */
-const GAME_IDS: readonly GameId[] = [
+/** The votable targets: the four games in registry order, then Chess last. */
+const VOTE_TARGET_IDS: readonly VoteTargetId[] = [
   "block-cascade",
   "serpent",
   "maze-muncher",
   "brick-buster",
+  "chess",
 ];
 
 /** Coerce an unknown value into a safe, non-negative integer count. */
@@ -48,14 +59,14 @@ function normalizeCount(value: unknown): number {
 /** A fresh all-zero vote map, used as the fail-safe default. */
 export function zeroVotes(): AllVotes {
   const out = {} as AllVotes;
-  for (const id of GAME_IDS) {
+  for (const id of VOTE_TARGET_IDS) {
     out[id] = { like: 0, love: 0 };
   }
   return out;
 }
 
 /**
- * GET the aggregate counts for all four games.
+ * GET the aggregate counts for every votable target (the four games + Chess).
  *
  * On any failure (network error, non-2xx, bad JSON) this resolves to an
  * all-zero map rather than throwing, so the hub always has something to render.
@@ -69,10 +80,10 @@ export async function fetchAllVotes(): Promise<AllVotes> {
       return zeroVotes();
     }
     const data = (await res.json()) as Partial<
-      Record<GameId, Partial<VoteCounts>>
+      Record<VoteTargetId, Partial<VoteCounts>>
     >;
     const out = zeroVotes();
-    for (const id of GAME_IDS) {
+    for (const id of VOTE_TARGET_IDS) {
       const counts = data?.[id];
       if (counts) {
         out[id] = {
@@ -93,7 +104,7 @@ export async function fetchAllVotes(): Promise<AllVotes> {
  * optimistic UI update.
  */
 export async function sendVote(
-  gameId: GameId,
+  gameId: VoteTargetId,
   reaction: Reaction,
   delta: 1 | -1,
 ): Promise<VoteCounts | null> {
@@ -116,15 +127,15 @@ export async function sendVote(
   }
 }
 
-/** The Local_Store key for one browser's vote flag on a game + reaction. */
-export const VOTE_KEY = (gameId: GameId, reaction: Reaction): string =>
+/** The Local_Store key for one browser's vote flag on a target + reaction. */
+export const VOTE_KEY = (gameId: VoteTargetId, reaction: Reaction): string =>
   `iglidhima.arcade.vote.${gameId}.${reaction}`;
 
 /**
- * Has this browser recorded a vote for the given game + reaction?
+ * Has this browser recorded a vote for the given target + reaction?
  * Returns `false` if storage is unavailable; never throws.
  */
-export function hasVoted(gameId: GameId, reaction: Reaction): boolean {
+export function hasVoted(gameId: VoteTargetId, reaction: Reaction): boolean {
   try {
     return localStorage.getItem(VOTE_KEY(gameId, reaction)) === "1";
   } catch {
@@ -137,7 +148,7 @@ export function hasVoted(gameId: GameId, reaction: Reaction): boolean {
  * skipped if storage is unavailable; never throws.
  */
 export function setVoted(
-  gameId: GameId,
+  gameId: VoteTargetId,
   reaction: Reaction,
   voted: boolean,
 ): void {

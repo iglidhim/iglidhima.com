@@ -34,13 +34,26 @@ describe("arcade bootstrap smoke test", () => {
   });
 
   it("renders the Hub with one selectable entry per game on load (Req 1.1)", () => {
+    // The arcade also wires the Chess card, so the grid holds one card per game
+    // plus the Chess card (last). Assert the game cards match the registry and
+    // Chess is appended after them.
     const cards = root.querySelectorAll<HTMLButtonElement>(".hub-card");
-    expect(cards).toHaveLength(GAME_COUNT);
+    expect(cards).toHaveLength(GAME_COUNT + 1);
     expect(GAME_COUNT).toBe(4);
 
-    // Each entry surfaces the game's name from the registry.
-    const names = Array.from(cards).map((c) => c.querySelector(".hub-card__name")?.textContent);
+    const gameCards = Array.from(cards).filter(
+      (c) => c.dataset.gameId !== "chess",
+    );
+    expect(gameCards).toHaveLength(GAME_COUNT);
+
+    // Each game entry surfaces the game's name from the registry.
+    const names = gameCards.map(
+      (c) => c.querySelector(".hub-card__name")?.textContent,
+    );
     expect(names).toEqual(Object.values(GAME_REGISTRY).map((g) => g.name));
+
+    // The Chess card is the last card in the grid.
+    expect(cards[cards.length - 1]?.dataset.gameId).toBe("chess");
 
     // No Play_Area is present before a game is selected.
     expect(root.querySelector(".play-area")).toBeNull();
@@ -89,6 +102,7 @@ describe("arcade bootstrap smoke test", () => {
     expect(controller.state).toEqual({ view: "hub" });
     expect(root.querySelector(".play-area")).toBeNull();
     expect(controller.playArea).toBeNull();
-    expect(root.querySelectorAll(".hub-card")).toHaveLength(GAME_COUNT);
+    // The selector is shown again with all its entries: the game cards + Chess.
+    expect(root.querySelectorAll(".hub-card")).toHaveLength(GAME_COUNT + 1);
   });
 });

@@ -36,7 +36,13 @@ function createEnv(initial: Record<string, string> = {}) {
 }
 
 const ORIGIN = "https://arcade.example";
-const GAME_IDS = ["block-cascade", "serpent", "maze-muncher", "brick-buster"];
+const GAME_IDS = [
+  "block-cascade",
+  "serpent",
+  "maze-muncher",
+  "brick-buster",
+  "chess",
+];
 
 function get(path: string): Request {
   return new Request(`${ORIGIN}${path}`, { method: "GET" });
@@ -51,7 +57,7 @@ function postVote(body: unknown, raw = false): Request {
 }
 
 describe("GET /api/votes", () => {
-  it("returns all four games with numeric like/love defaulting to 0", async () => {
+  it("returns every votable target (games + chess) with numeric like/love defaulting to 0", async () => {
     const { env } = createEnv();
     const res = await worker.fetch(get("/api/votes"), env);
 
@@ -129,6 +135,18 @@ describe("POST /api/vote", () => {
     const body = (await res.json()) as { like: number; love: number };
     expect(body.like).toBe(0);
     expect(store.get("count:brick-buster:like")).toBe("0");
+  });
+
+  it("accepts a vote for the chess target and returns its counts", async () => {
+    const { env, store } = createEnv();
+    const res = await worker.fetch(
+      postVote({ gameId: "chess", reaction: "love", delta: 1 }),
+      env,
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { like: number; love: number };
+    expect(body).toEqual({ like: 0, love: 1 });
+    expect(store.get("count:chess:love")).toBe("1");
   });
 
   it("keeps like and love independent", async () => {

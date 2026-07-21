@@ -13,14 +13,15 @@
 // Arrow keys to steer") already names the game for assistive technology. The
 // icon must not duplicate that name.
 
-import type { GameId } from "../engine/types";
+import type { VoteTargetId } from "../lib/votes";
 
 /**
- * Inline SVG markup keyed by {@link GameId}. Kept as a small, readable record so
- * adding or tweaking a motif is a one-line edit. Each string is a self-contained
- * decorative `<svg>` using `currentColor` and a shared 48x48 `viewBox`.
+ * Inline SVG markup keyed by {@link VoteTargetId} (the four games plus Chess).
+ * Kept as a small, readable record so adding or tweaking a motif is a one-line
+ * edit. Each string is a self-contained decorative `<svg>` using `currentColor`
+ * and a shared 48x48 `viewBox`.
  */
-export const GAME_ICONS: Record<GameId, string> = {
+export const GAME_ICONS: Record<VoteTargetId, string> = {
   // Stacked blocks / T-tetromino motif.
   "block-cascade": `
     <svg class="hub-card__icon" viewBox="0 0 48 48" aria-hidden="true" focusable="false" fill="currentColor">
@@ -62,6 +63,17 @@ export const GAME_ICONS: Record<GameId, string> = {
       <circle cx="31" cy="31" r="3.2" />
       <rect x="14" y="39" width="20" height="4.5" rx="2.25" />
     </svg>`,
+
+  // Chess: a knight silhouette built from a single simple shape, atop a base
+  // plinth, with a small punched-out eye (via opacity) for character.
+  chess: `
+    <svg class="hub-card__icon" viewBox="0 0 48 48" aria-hidden="true" focusable="false" fill="currentColor">
+      <path d="M18 40 c0 -6 1 -9 4 -12 c-3 1 -6 1 -8 -1 l3 -4 c-2 0 -3 -1 -3 -3
+               c0 -4 4 -7 9 -9 l-1 -3 a1.6 1.6 0 0 1 3 -1 l1 2 c6 1 11 6 11 15
+               v16 Z" />
+      <circle cx="19.5" cy="17.5" r="1.3" opacity="0.35" />
+      <rect x="13" y="41" width="24" height="4" rx="1.5" opacity="0.85" />
+    </svg>`,
 };
 
 /**
@@ -71,7 +83,7 @@ export const GAME_ICONS: Record<GameId, string> = {
  * both the browser and jsdom, so the returned element can be appended straight
  * into a `.hub-card`.
  */
-export function createGameIcon(id: GameId): SVGSVGElement {
+export function createGameIcon(id: VoteTargetId): SVGSVGElement {
   const template = document.createElement("template");
   template.innerHTML = GAME_ICONS[id].trim();
   return template.content.firstElementChild as SVGSVGElement;

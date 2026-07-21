@@ -3,7 +3,7 @@
 //
 // Runs against the served production preview build (see playwright.config.ts).
 // Selectors mirror the Chess chrome:
-//   .hub__chess          — the Hub entry that opens Chess (ui/hub.ts)
+//   .hub-card[data-game-id="chess"] .hub-card__play — the Hub game card that opens Chess (ui/hub.ts)
 //   .chess               — the play-view root (ui/chess.ts)
 //   .chess__board        — the 8x8 board grid
 //   .chess__square       — a board square button (data-square="e2", …)
@@ -17,7 +17,7 @@ import { test, expect, type Page } from "@playwright/test";
 /** Open Chess from the Hub and wait for the board to mount. */
 async function openChess(page: Page): Promise<void> {
   await page.goto("/");
-  await page.locator(".hub__chess").click();
+  await page.locator('.hub-card[data-game-id="chess"] .hub-card__play').click();
   await page.locator(".chess").waitFor({ state: "visible" });
   await page.locator(".chess__board").waitFor({ state: "visible" });
 }

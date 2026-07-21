@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { createHub, type HubVoteDeps } from "./hub";
 import { GAME_REGISTRY } from "../games/registry";
 import type { GameId } from "../engine/types";
-import { zeroVotes, type AllVotes } from "../lib/votes";
+import { zeroVotes, type AllVotes, type VoteTargetId } from "../lib/votes";
 
 /**
  * Build a set of injectable vote deps that never touch the network or real
@@ -15,7 +15,8 @@ import { zeroVotes, type AllVotes } from "../lib/votes";
  */
 function stubVoteDeps(overrides: Partial<HubVoteDeps> = {}): HubVoteDeps {
   const voted = new Set<string>();
-  const key = (id: GameId, reaction: string): string => `${id}:${reaction}`;
+  const key = (id: VoteTargetId, reaction: string): string =>
+    `${id}:${reaction}`;
   return {
     fetchAllVotes: async (): Promise<AllVotes> => zeroVotes(),
     sendVote: async () => ({ like: 0, love: 0 }),
@@ -252,8 +253,12 @@ describe("createHub — Family Corner entry", () => {
   });
 });
 
-describe("createHub — Chess entry", () => {
+describe("createHub — Chess game card", () => {
   let host: HTMLElement;
+
+  /** The Chess card's stable selector: the 5th `.hub-card[data-game-id="chess"]`. */
+  const CHESS_CARD = '.hub-card[data-game-id="chess"]';
+  const CHESS_PLAY = `${CHESS_CARD} .hub-card__play`;
 
   beforeEach(() => {
     document.body.innerHTML = "";
@@ -261,7 +266,7 @@ describe("createHub — Chess entry", () => {
     document.body.appendChild(host);
   });
 
-  it("renders a Chess entry distinct from the game cards when the callback is provided", () => {
+  it("renders Chess as a 5th game card, last in the grid, when the callback is provided", () => {
     const hub = createHub({
       onSelect: () => {},
       onOpenChess: () => {},
@@ -269,27 +274,45 @@ describe("createHub — Chess entry", () => {
     });
     hub.mount(host);
 
-    const entry = host.querySelector<HTMLButtonElement>(".hub__chess");
-    expect(entry).not.toBeNull();
-    expect(entry?.tagName).toBe("BUTTON");
-    expect(entry?.type).toBe("button");
-    expect(entry?.getAttribute("aria-label")?.length).toBeGreaterThan(0);
-    // It is not one of the four game cards.
-    expect(entry?.classList.contains("hub-card")).toBe(false);
-    expect(host.querySelectorAll(".hub-card")).toHaveLength(4);
+    const cards = host.querySelectorAll<HTMLElement>(".hub-card");
+    expect(cards).toHaveLength(5);
+    // Chess is the last card in the grid, after brick-buster.
+    const last = cards[cards.length - 1];
+    expect(last?.dataset.gameId).toBe("chess");
+    expect(cards[cards.length - 2]?.dataset.gameId).toBe("brick-buster");
+
+    // It uses the same card structure as the game cards.
+    const card = host.querySelector<HTMLElement>(CHESS_CARD);
+    expect(card).not.toBeNull();
+    expect(card?.tagName).not.toBe("BUTTON");
+    const playBtn = host.querySelector<HTMLButtonElement>(CHESS_PLAY);
+    expect(playBtn?.tagName).toBe("BUTTON");
+    expect(playBtn?.type).toBe("button");
+    // Self-describing accessible name built from the display name.
+    expect(playBtn?.getAttribute("aria-label")).toMatch(/^Play Chess\. /);
+    // Name + label + decorative icon, matching the game cards.
+    expect(card?.querySelector(".hub-card__name")?.textContent).toBe("Chess");
+    expect(
+      card?.querySelector(".hub-card__label")?.textContent?.trim().length,
+    ).toBeGreaterThan(0);
+    const icon = card?.querySelector("svg");
+    expect(icon?.getAttribute("aria-hidden")).toBe("true");
+    expect(icon?.classList.contains("hub-card__icon")).toBe(true);
   });
 
-  it("omits the Chess entry when no callback is provided", () => {
+  it("omits the Chess card when no callback is provided", () => {
     const hub = createHub({ onSelect: () => {}, votes: stubVoteDeps() });
     hub.mount(host);
 
-    expect(host.querySelector(".hub__chess")).toBeNull();
+    expect(host.querySelector(CHESS_CARD)).toBeNull();
+    expect(host.querySelectorAll(".hub-card")).toHaveLength(4);
   });
 
-  it("invokes onOpenChess when the entry is activated", () => {
+  it("invokes onOpenChess (not onSelect) when the Chess play button is activated", () => {
     let opened = 0;
+    const selected: GameId[] = [];
     const hub = createHub({
-      onSelect: () => {},
+      onSelect: (id) => selected.push(id),
       onOpenChess: () => {
         opened += 1;
       },
@@ -297,24 +320,98 @@ describe("createHub — Chess entry", () => {
     });
     hub.mount(host);
 
-    host.querySelector<HTMLButtonElement>(".hub__chess")?.click();
+    host.querySelector<HTMLButtonElement>(CHESS_PLAY)?.click();
     expect(opened).toBe(1);
+    // Activating Chess must not launch a canvas game.
+    expect(selected).toEqual([]);
   });
 
-  it("activating the Chess entry does not launch a game", () => {
-    const selected: GameId[] = [];
+  it("renders a vote bar on the Chess card with like + love toggles", () => {
     const hub = createHub({
-      onSelect: (id) => selected.push(id),
+      onSelect: () => {},
       onOpenChess: () => {},
       votes: stubVoteDeps(),
     });
     hub.mount(host);
 
-    host.querySelector<HTMLButtonElement>(".hub__chess")?.click();
-    expect(selected).toEqual([]);
+    const card = host.querySelector<HTMLElement>(CHESS_CARD);
+    expect(card?.querySelector(".hub-card__votes")).not.toBeNull();
+    const voteBtns = card?.querySelectorAll<HTMLButtonElement>(".vote-btn");
+    expect(voteBtns).toHaveLength(2);
+    expect(voteBtns?.[0]?.dataset.reaction).toBe("like");
+    expect(voteBtns?.[1]?.dataset.reaction).toBe("love");
+    expect(voteBtns?.[0]?.getAttribute("aria-label")).toBe("Like Chess");
+    expect(voteBtns?.[1]?.getAttribute("aria-label")).toBe("Love Chess");
   });
 
-  it("cleans up the entry's listener on destroy", () => {
+  it("populates the Chess card counts from fetchAllVotes with vote id 'chess'", async () => {
+    const all = zeroVotes();
+    all["chess"] = { like: 4, love: 9 };
+    const votes = stubVoteDeps({ fetchAllVotes: async () => all });
+
+    const hub = createHub({ onSelect: () => {}, onOpenChess: () => {}, votes });
+    hub.mount(host);
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const likeCount = host.querySelector(
+      `${CHESS_CARD} .vote-btn[data-reaction="like"] .vote-btn__count`,
+    );
+    const loveCount = host.querySelector(
+      `${CHESS_CARD} .vote-btn[data-reaction="love"] .vote-btn__count`,
+    );
+    expect(likeCount?.textContent).toBe("4");
+    expect(loveCount?.textContent).toBe("9");
+  });
+
+  it("optimistically toggles the Chess vote and calls sendVote with id 'chess'", async () => {
+    const sendVote = vi.fn(async () => ({ like: 1, love: 0 }));
+    const votes = stubVoteDeps({ sendVote });
+    const hub = createHub({ onSelect: () => {}, onOpenChess: () => {}, votes });
+    hub.mount(host);
+
+    const likeBtn = host.querySelector<HTMLButtonElement>(
+      `${CHESS_CARD} .vote-btn[data-reaction="like"]`,
+    );
+    const countEl = likeBtn?.querySelector(".vote-btn__count");
+    expect(likeBtn?.getAttribute("aria-pressed")).toBe("false");
+    expect(countEl?.textContent).toBe("0");
+
+    likeBtn?.click();
+
+    // Optimistic update is synchronous, before the POST resolves.
+    expect(likeBtn?.getAttribute("aria-pressed")).toBe("true");
+    expect(countEl?.textContent).toBe("1");
+    expect(sendVote).toHaveBeenCalledWith("chess", "like", 1);
+
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(countEl?.textContent).toBe("1");
+  });
+
+  it("reverts the Chess optimistic update when the vote request fails", async () => {
+    const sendVote = vi.fn(async () => null);
+    const votes = stubVoteDeps({ sendVote });
+    const hub = createHub({ onSelect: () => {}, onOpenChess: () => {}, votes });
+    hub.mount(host);
+
+    const loveBtn = host.querySelector<HTMLButtonElement>(
+      `${CHESS_CARD} .vote-btn[data-reaction="love"]`,
+    );
+    const countEl = loveBtn?.querySelector(".vote-btn__count");
+
+    loveBtn?.click();
+    expect(loveBtn?.getAttribute("aria-pressed")).toBe("true");
+    expect(countEl?.textContent).toBe("1");
+
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(loveBtn?.getAttribute("aria-pressed")).toBe("false");
+    expect(countEl?.textContent).toBe("0");
+  });
+
+  it("cleans up the Chess card listeners on destroy", () => {
     let opened = 0;
     const hub = createHub({
       onSelect: () => {},
@@ -324,10 +421,10 @@ describe("createHub — Chess entry", () => {
       votes: stubVoteDeps(),
     });
     hub.mount(host);
-    const entry = host.querySelector<HTMLButtonElement>(".hub__chess");
+    const playBtn = host.querySelector<HTMLButtonElement>(CHESS_PLAY);
 
     hub.destroy();
-    entry?.click();
+    playBtn?.click();
     expect(opened).toBe(0);
   });
 });

@@ -3,7 +3,29 @@
 // jsdom globs so it runs in the fast `node` environment (no DOM needed).
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
-import { voteDelta } from "./votes";
+import { voteDelta, zeroVotes } from "./votes";
+
+describe("zeroVotes", () => {
+  it("includes the four games plus the chess target, all zeroed", () => {
+    const zero = zeroVotes();
+    expect(Object.keys(zero).sort()).toEqual(
+      [
+        "block-cascade",
+        "brick-buster",
+        "chess",
+        "maze-muncher",
+        "serpent",
+      ].sort(),
+    );
+    for (const counts of Object.values(zero)) {
+      expect(counts).toEqual({ like: 0, love: 0 });
+    }
+  });
+
+  it("keys chess like any other votable target", () => {
+    expect(zeroVotes()["chess"]).toEqual({ like: 0, love: 0 });
+  });
+});
 
 describe("voteDelta", () => {
   it("adds a vote (+1) when not currently voted", () => {

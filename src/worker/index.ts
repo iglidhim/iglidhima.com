@@ -56,12 +56,19 @@ export interface Env {
   ACCESS_AUD?: string;
 }
 
-/** The four known games. A vote for any other id is rejected. */
+/**
+ * The known votable targets: the four canvas games plus the Chess destination.
+ * A vote for any other id is rejected. Chess is not a canvas game, but it has
+ * its own global Like/Love counts alongside the games; its KV keys
+ * (`count:chess:like` / `count:chess:love`) are created on demand and default
+ * to 0, so adding it is backward compatible.
+ */
 const GAME_IDS = [
   "block-cascade",
   "serpent",
   "maze-muncher",
   "brick-buster",
+  "chess",
 ] as const;
 type GameId = (typeof GAME_IDS)[number];
 
@@ -124,7 +131,7 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-/** GET /api/votes -> aggregate counts for all four games. */
+/** GET /api/votes -> aggregate counts for every votable target (games + chess). */
 async function handleGetVotes(env: Env): Promise<Response> {
   const result: Record<GameId, VoteCounts> = {} as Record<GameId, VoteCounts>;
   for (const id of GAME_IDS) {

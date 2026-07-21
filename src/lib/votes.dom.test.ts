@@ -44,6 +44,16 @@ describe("vote-state helpers", () => {
     expect(hasVoted("brick-buster", "love")).toBe(false);
   });
 
+  it("supports the chess target like any other votable id", () => {
+    expect(VOTE_KEY("chess", "love")).toBe("iglidhima.arcade.vote.chess.love");
+    expect(hasVoted("chess", "love")).toBe(false);
+    setVoted("chess", "love", true);
+    expect(hasVoted("chess", "love")).toBe(true);
+    expect(hasVoted("chess", "like")).toBe(false);
+    setVoted("chess", "love", false);
+    expect(hasVoted("chess", "love")).toBe(false);
+  });
+
   it("treats any non-'1' stored value as not voted", () => {
     localStorage.setItem(VOTE_KEY("serpent", "like"), "yes");
     expect(hasVoted("serpent", "like")).toBe(false);

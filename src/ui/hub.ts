@@ -41,6 +41,7 @@ import {
   type AllVotes,
   type Reaction,
   type VoteCounts,
+  type VoteTargetId,
 } from "../lib/votes";
 
 /** Default heading text identifying the Site as an arcade hub. */
@@ -67,6 +68,12 @@ const CONTROL_LABELS: Record<GameId, string> = {
 };
 
 /**
+ * The control label shown beneath the Chess card. Chess is not a canvas game
+ * (it is not in {@link CONTROL_LABELS}), so it carries its own short label.
+ */
+const CHESS_LABEL = "Vs computer or a friend";
+
+/**
  * A mounted Hub. Returned by {@link createHub}. The bootstrap layer mounts it,
  * reacts to selections via `onSelect`, and tears it down with `destroy()` when
  * a Game becomes the Active_Game.
@@ -87,12 +94,12 @@ export interface Hub {
 export interface HubVoteDeps {
   fetchAllVotes: () => Promise<AllVotes>;
   sendVote: (
-    gameId: GameId,
+    gameId: VoteTargetId,
     reaction: Reaction,
     delta: 1 | -1,
   ) => Promise<VoteCounts | null>;
-  hasVoted: (gameId: GameId, reaction: Reaction) => boolean;
-  setVoted: (gameId: GameId, reaction: Reaction, voted: boolean) => void;
+  hasVoted: (gameId: VoteTargetId, reaction: Reaction) => boolean;
+  setVoted: (gameId: VoteTargetId, reaction: Reaction, voted: boolean) => void;
 }
 
 export interface CreateHubOptions {
@@ -168,15 +175,30 @@ export function createHub(options: CreateHubOptions): Hub {
   grid.setAttribute("aria-label", "Choose a game");
 
   const listeners: Array<() => void> = [];
-  // Per-game vote controls, so the async fetch can populate counts by game id.
-  const controlsByGame = new Map<GameId, VoteControl[]>();
+  // Per-target vote controls, so the async fetch can populate counts by id.
+  // Keyed by VoteTargetId so the Chess card participates alongside the games.
+  const controlsByGame = new Map<VoteTargetId, VoteControl[]>();
   // Guard so a late-resolving fetch never touches a destroyed hub.
   let destroyed = false;
 
-  // Render one entry per game in registry order (Requirements 1.1, 1.2).
-  for (const id of Object.keys(GAME_REGISTRY) as GameId[]) {
-    const { name } = GAME_REGISTRY[id];
-    const controlLabel = CONTROL_LABELS[id];
+  /**
+   * Build one `.hub-card` (a launch button + a 👍/❤️ vote bar) and append it to
+   * the grid. Shared by the four game cards and the Chess card so their DOM,
+   * accessibility, vote wiring, and listener cleanup stay identical.
+   *
+   * @param spec.id         The vote target id (also the card's `data-game-id`).
+   * @param spec.name       The display name shown in the card and aria-labels.
+   * @param spec.label      The short control/description label under the name.
+   * @param spec.onActivate Invoked when the play button is activated (launches a
+   *                        game via `onSelect`, or opens Chess via `onOpenChess`).
+   */
+  function buildCard(spec: {
+    id: VoteTargetId;
+    name: string;
+    label: string;
+    onActivate: () => void;
+  }): void {
+    const { id, name, label, onActivate } = spec;
 
     // Container is a non-interactive <article> so the play button and vote
     // buttons are siblings, never nested interactive controls.
@@ -189,9 +211,9 @@ export function createHub(options: CreateHubOptions): Hub {
     playBtn.type = "button";
     playBtn.className = "hub-card__play";
     // Full accessible name so the control is self-describing (Requirement 9.5).
-    playBtn.setAttribute("aria-label", `Play ${name}. ${controlLabel}`);
+    playBtn.setAttribute("aria-label", `Play ${name}. ${label}`);
 
-    // Decorative per-game icon, rendered above the name. It is aria-hidden, so
+    // Decorative per-target icon, rendered above the name. It is aria-hidden, so
     // it adds visual identity without duplicating the button's accessible name.
     const icon = createGameIcon(id);
 
@@ -201,11 +223,11 @@ export function createHub(options: CreateHubOptions): Hub {
 
     const labelEl = document.createElement("span");
     labelEl.className = "hub-card__label";
-    labelEl.textContent = controlLabel;
+    labelEl.textContent = label;
 
     playBtn.append(icon, nameEl, labelEl);
 
-    const playHandler = (): void => onSelect(id);
+    const playHandler = (): void => onActivate();
     playBtn.addEventListener("click", playHandler);
     listeners.push(() => playBtn.removeEventListener("click", playHandler));
 
@@ -261,6 +283,29 @@ export function createHub(options: CreateHubOptions): Hub {
     grid.appendChild(card);
   }
 
+  // Render one card per game in registry order (Requirements 1.1, 1.2).
+  for (const id of Object.keys(GAME_REGISTRY) as GameId[]) {
+    buildCard({
+      id,
+      name: GAME_REGISTRY[id].name,
+      label: CONTROL_LABELS[id],
+      onActivate: () => onSelect(id),
+    });
+  }
+
+  // Render the Chess card LAST in the grid, visually identical to the game
+  // cards but launching the Chess play experience via `onOpenChess` rather than
+  // loading a canvas game. Only rendered when the caller wires `onOpenChess`
+  // (mirrors the previous standalone-entry guard).
+  if (onOpenChess) {
+    buildCard({
+      id: "chess",
+      name: "Chess",
+      label: CHESS_LABEL,
+      onActivate: () => onOpenChess(),
+    });
+  }
+
   /** Reflect a control's current state into the DOM. */
   function paint(control: VoteControl): void {
     control.countEl.textContent = String(control.count);
@@ -271,7 +316,7 @@ export function createHub(options: CreateHubOptions): Hub {
    * Toggle a reaction: optimistically update the count + pressed state +
    * localStorage, then POST. Revert the optimistic change if the POST fails.
    */
-  async function handleVote(id: GameId, control: VoteControl): Promise<void> {
+  async function handleVote(id: VoteTargetId, control: VoteControl): Promise<void> {
     const prevCount = control.count;
     const prevPressed = control.pressed;
     const delta = voteDelta(prevPressed);
@@ -341,46 +386,6 @@ export function createHub(options: CreateHubOptions): Hub {
 
     familyNav.appendChild(familyBtn);
     root.appendChild(familyNav);
-  }
-
-  // --- Chess entry ----------------------------------------------------------
-  // A navigational destination distinct from the four game cards and the Family
-  // Corner entry: it opens the Chess play experience (vs computer or a friend)
-  // rather than launching a canvas arcade game. Rendered as its own native
-  // <button> in a separate section so it reads as a different kind of
-  // destination. Only rendered when the caller wires `onOpenChess`.
-  if (onOpenChess) {
-    const chessNav = document.createElement("nav");
-    chessNav.className = "hub__chess-nav";
-    chessNav.setAttribute("aria-label", "Chess");
-
-    const chessBtn = document.createElement("button");
-    chessBtn.type = "button";
-    chessBtn.className = "hub__chess";
-    // Self-describing accessible name (Requirement 9.5-style labelling).
-    chessBtn.setAttribute("aria-label", "Chess. Play vs computer or a friend");
-
-    const chessGlyph = document.createElement("span");
-    chessGlyph.className = "hub__chess-glyph";
-    chessGlyph.setAttribute("aria-hidden", "true");
-    chessGlyph.textContent = "\u265E"; // black knight ♞
-
-    const chessName = document.createElement("span");
-    chessName.className = "hub__chess-name";
-    chessName.textContent = "Chess";
-
-    const chessLabel = document.createElement("span");
-    chessLabel.className = "hub__chess-label";
-    chessLabel.textContent = "Play vs computer or a friend";
-
-    chessBtn.append(chessGlyph, chessName, chessLabel);
-
-    const chessHandler = (): void => onOpenChess();
-    chessBtn.addEventListener("click", chessHandler);
-    listeners.push(() => chessBtn.removeEventListener("click", chessHandler));
-
-    chessNav.appendChild(chessBtn);
-    root.appendChild(chessNav);
   }
 
   // Kick off the aggregate fetch without blocking the initial render. When it
