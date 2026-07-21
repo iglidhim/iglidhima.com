@@ -1,0 +1,424 @@
+/* ============================================================================
+   Global styles for the arcade hub (iglidhima.com)
+   Task 16.1 — design tokens, responsive layout, accessibility.
+
+   All colour pairings used for text (Score display, control labels, and
+   instructions) meet WCAG AA >= 4.5:1 contrast against their backgrounds
+   (Requirement 9.3). Layout is single-column with no horizontal scroll below
+   the mobile breakpoint (Requirement 8.1) and centred within a max-width
+   container at desktop (Requirement 8.2). A global :focus-visible outline is
+   applied to every interactive element (Requirement 9.1).
+
+   Breakpoints (Glossary / Requirements 8.1, 8.2):
+     mobile  : viewport width  < 768px
+     tablet  : 768px <= width <= 1024px
+     desktop : viewport width  > 1024px
+   Media queries below use these literal values because CSS custom properties
+   cannot be referenced inside a media-query condition.
+   ============================================================================ */
+
+:root {
+  color-scheme: dark;
+
+  /* --- Core palette (retro-arcade: deep space background, neon accents) --- */
+  --color-bg: #0a0e1a;            /* app background — near-black navy */
+  --color-surface: #141a2e;       /* raised panels (hub cards, play area)   */
+  --color-surface-alt: #1d2540;   /* hover / secondary surface              */
+  --color-border: #2c3557;        /* subtle panel borders                   */
+
+  /* Neon accents. Each accent below passes >= 4.5:1 on --color-bg and on
+     --color-surface, so they are safe for text as well as decoration. */
+  --color-accent-cyan: #35e0f2;   /* primary accent — links, focus, headings */
+  --color-accent-pink: #ff6ec7;   /* secondary accent                        */
+  --color-accent-yellow: #ffe14d; /* score / highlight                       */
+  --color-accent-green: #4ade80;  /* success / high-score                    */
+
+  /* --- Text colours (all verified >= 4.5:1 on --color-bg & --color-surface) --- */
+  --color-text: #f5f7fa;          /* primary text ~ 18:1 on bg               */
+  --color-text-muted: #b8c1d9;    /* secondary text ~ 10:1 on bg             */
+  --color-text-on-accent: #0a0e1a;/* dark text for use on bright accents     */
+
+  /* Semantic text tokens consumed by chrome components (Requirement 9.3). */
+  --color-score: var(--color-accent-yellow);      /* Score display          */
+  --color-high-score: var(--color-accent-green);   /* High_Score display     */
+  --color-label: var(--color-text);                /* control labels         */
+  --color-instructions: var(--color-text-muted);   /* instructional text     */
+
+  /* --- Focus indicator (Requirement 9.1) --- */
+  --focus-ring-color: var(--color-accent-cyan);
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 2px;
+
+  /* --- Spacing scale --- */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+
+  /* --- Type scale --- */
+  --font-sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-display: "Press Start 2P", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "SFMono-Regular", ui-monospace, "Cascadia Code", monospace;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.75rem;
+  --font-size-2xl: 2.5rem;
+
+  /* --- Radius & elevation --- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-panel: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-glow: 0 0 16px rgba(53, 224, 242, 0.35);
+
+  /* --- Layout tokens --- */
+  --container-max-width: 1024px;  /* centred content cap at desktop (Req 8.2) */
+  --hub-card-min: 220px;          /* min hub tile width for the auto grid      */
+
+  /* --- Documented breakpoints (for reference by JS / future tokens) --- */
+  --breakpoint-mobile: 768px;
+  --breakpoint-desktop: 1024px;
+}
+
+/* ----------------------------------------------------------------------------
+   Reset / base
+   ---------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* Prevent horizontal scroll from any wide child (Requirement 8.1). */
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  max-width: 100%;
+  overflow-x: hidden; /* single-column, no horizontal scroll (Req 8.1) */
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(circle at 20% -10%, rgba(53, 224, 242, 0.10), transparent 45%),
+    radial-gradient(circle at 85% 0%, rgba(255, 110, 199, 0.10), transparent 45%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+}
+
+img,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+h1, h2, h3 {
+  margin: 0 0 var(--space-md);
+  line-height: 1.15;
+  color: var(--color-text);
+}
+
+/* ----------------------------------------------------------------------------
+   Accessibility: visible focus indicator on every interactive element
+   (Requirement 9.1). :focus-visible keeps the ring for keyboard users while
+   avoiding a persistent ring on mouse clicks.
+   ---------------------------------------------------------------------------- */
+
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-sm);
+}
+
+/* Belt-and-braces: browsers without :focus-visible still get a visible ring. */
+a:focus,
+button:focus,
+[tabindex]:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Visually-hidden helper for accessible labels that stay off-screen. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ----------------------------------------------------------------------------
+   Layout utilities
+   ---------------------------------------------------------------------------- */
+
+/* Centred, max-width container. Single-column, full-width with padding on
+   mobile (Req 8.1); capped and centred from desktop up (Req 8.2). */
+.arcade-container {
+  width: 100%;
+  max-width: var(--container-max-width);
+  margin-inline: auto;
+  padding-inline: var(--space-md);
+  padding-block: var(--space-lg);
+}
+
+/* Page-level vertical stack — single column at every breakpoint. */
+.arcade-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  min-height: 100vh;
+}
+
+/* --- Hub / Game_Selector grid --------------------------------------------- */
+
+.hub {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.hub__title {
+  font-family: var(--font-display);
+  font-size: var(--font-size-2xl);
+  text-align: center;
+  color: var(--color-accent-cyan);
+  text-shadow: var(--shadow-glow);
+  letter-spacing: 0.04em;
+}
+
+/* Single column on mobile; auto-fits to multiple columns as width allows. */
+.hub-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+  width: 100%;
+}
+
+/* Hub tile — one selectable entry per game. */
+.hub-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  text-align: left;
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease,
+    box-shadow 120ms ease, background-color 120ms ease;
+}
+
+.hub-card:hover {
+  transform: translateY(-3px);
+  background-color: var(--color-surface-alt);
+  border-color: var(--color-accent-cyan);
+  box-shadow: var(--shadow-panel), var(--shadow-glow);
+}
+
+.hub-card__name {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  color: var(--color-accent-cyan);
+}
+
+.hub-card__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-instructions);
+}
+
+/* --- Play_Area ------------------------------------------------------------- */
+
+.play-area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  align-items: center;
+  width: 100%;
+  padding: var(--space-md);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+}
+
+/* Canvas host — the game scales to fit this width at every breakpoint
+   (fit math lives in lib/canvasFit.ts; this keeps it within the column). */
+.play-area__stage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+}
+
+.play-area__canvas {
+  max-width: 100%;
+  height: auto;
+  background-color: #000;
+  border-radius: var(--radius-md);
+}
+
+/* --- Scoreboard ------------------------------------------------------------ */
+
+.scoreboard {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-lg);
+  width: 100%;
+  font-family: var(--font-mono);
+}
+
+.scoreboard__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.scoreboard__caption {
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.scoreboard__score {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-score);
+}
+
+.scoreboard__high-score {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-high-score);
+}
+
+/* --- Instructions ---------------------------------------------------------- */
+
+.instructions {
+  color: var(--color-instructions);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  max-width: 60ch;
+}
+
+/* --- Lifecycle controls ---------------------------------------------------- */
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.btn {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-label);
+  padding: var(--space-sm) var(--space-lg);
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease,
+    color 120ms ease;
+}
+
+.btn:hover {
+  border-color: var(--color-accent-cyan);
+  background-color: var(--color-surface);
+}
+
+.btn--primary {
+  color: var(--color-text-on-accent);
+  background-color: var(--color-accent-cyan);
+  border-color: var(--color-accent-cyan);
+}
+
+.btn--primary:hover {
+  background-color: var(--color-accent-pink);
+  border-color: var(--color-accent-pink);
+}
+
+/* --- Touch controls overlay ------------------------------------------------ */
+
+.touch-controls {
+  display: none; /* shown by the component only on touch-capable devices */
+  gap: var(--space-sm);
+  width: 100%;
+  justify-content: center;
+}
+
+.touch-controls[data-touch="true"] {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.touch-controls__btn {
+  min-width: 64px;
+  min-height: 64px;
+  font-size: var(--font-size-lg);
+  color: var(--color-label);
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* ----------------------------------------------------------------------------
+   Responsive breakpoints
+   ---------------------------------------------------------------------------- */
+
+/* Tablet: 768px – 1024px — two-column hub grid. */
+@media (min-width: 768px) {
+  .hub-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .arcade-container {
+    padding-inline: var(--space-lg);
+  }
+}
+
+/* Desktop: > 1024px — centred max-width container (Requirement 8.2). */
+@media (min-width: 1025px) {
+  .arcade-container {
+    padding-inline: var(--space-xl);
+  }
+
+  .hub-grid {
+    grid-template-columns: repeat(auto-fit, minmax(var(--hub-card-min), 1fr));
+  }
+}
