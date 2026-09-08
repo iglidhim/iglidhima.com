@@ -9,6 +9,7 @@ import {
   BALL_RADIUS,
   FIELD_HEIGHT,
   FIELD_WIDTH,
+  PADDLE_SPEED,
   createInitialState,
   getScore,
   isGameOver,
@@ -120,8 +121,9 @@ export const brickBuster: GameDefinition<BrickState, BrickBusterAction> = {
   name: "Brick Buster",
   instructions:
     "Move the paddle with the Left/Right arrow keys or A/D. Press Space to " +
-    "launch the ball. Bounce it off the paddle to break every brick without " +
-    "letting it fall past the bottom.",
+    "launch the ball. On a touch screen, drag anywhere to move the paddle " +
+    "and tap to launch. Bounce the ball off the paddle to break every brick " +
+    "without letting it fall past the bottom.",
   aspectRatio: FIELD_WIDTH / FIELD_HEIGHT,
 
   // Keyboard → action (Requirement 3.1).
@@ -144,6 +146,18 @@ export const brickBuster: GameDefinition<BrickState, BrickBusterAction> = {
     { action: "right", label: "Move right", position: "right" },
     { action: "launch", label: "Launch ball", position: "primary" },
   ],
+
+  // On-canvas gestures (Req 3.2, 8.4): dragging horizontally moves the paddle
+  // so it tracks the finger — each `left`/`right` action shifts the paddle
+  // PADDLE_SPEED logical units, so the drag step is that same distance as a
+  // fraction of the field's display width (one paddle-step of finger travel =
+  // one paddle-step of movement). A tap launches the resting ball; the pure
+  // logic ignores `launch` once the ball is in flight.
+  gestures: {
+    tap: "launch",
+    left: { action: "left", stepFraction: PADDLE_SPEED / FIELD_WIDTH },
+    right: { action: "right", stepFraction: PADDLE_SPEED / FIELD_WIDTH },
+  },
 
   createInitialState,
   step,

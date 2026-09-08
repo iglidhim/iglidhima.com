@@ -164,8 +164,9 @@ export const blockCascade: GameDefinition<BlockCascadeState, BlockCascadeAction>
   name: "Tetris",
   instructions:
     "Stack the falling blocks to complete full rows. Left/Right arrows move, " +
-    "Up rotates, Down soft-drops, and Space hard-drops. Clear lines to score; " +
-    "the game ends when the stack reaches the top.",
+    "Up rotates, Down soft-drops, and Space hard-drops. On a touch screen, " +
+    "drag sideways to move, tap to rotate, and swipe down to drop. Clear " +
+    "lines to score; the game ends when the stack reaches the top.",
   aspectRatio: COLS / ROWS,
 
   // Keyboard → action (Requirement 3.1).
@@ -187,6 +188,19 @@ export const blockCascade: GameDefinition<BlockCascadeState, BlockCascadeAction>
     { action: "rotate", label: "Rotate", position: "up" },
     { action: "hardDrop", label: "Drop", position: "primary" },
   ],
+
+  // On-canvas gestures (Req 3.2, 8.4): dragging sideways steps the piece one
+  // column per column-width of travel (the board is centred and cells are
+  // square, so 1/COLS of the display width ≈ one column); a tap rotates; and a
+  // decisive downward swipe hard-drops. The drop is `once` per touch — a
+  // hard drop locks the piece, so letting the swipe repeat would immediately
+  // slam the NEXT piece too.
+  gestures: {
+    tap: "rotate",
+    left: { action: "left", stepFraction: 1 / COLS },
+    right: { action: "right", stepFraction: 1 / COLS },
+    down: { action: "hardDrop", stepFraction: 0.25, once: true },
+  },
 
   createInitialState,
   step,

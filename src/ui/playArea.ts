@@ -36,6 +36,7 @@ import { InputManager, detectTouchCapable, type InputManagerOptions } from "../e
 import { createScoreboard, type Scoreboard } from "./scoreboard";
 import { createLifecycleControls, type LifecycleControls } from "./controls";
 import { createTouchControls, type TouchControls } from "./touchControls";
+import { createCanvasGestures, type CanvasGestures } from "./canvasGestures";
 import { fitToContainer } from "../lib/canvasFit";
 import { readHighScore as defaultReadHighScore } from "../scores/scoreStore";
 
@@ -138,6 +139,7 @@ export function createPlayArea(options: CreatePlayAreaOptions): PlayArea {
   let controls: LifecycleControls | null = null;
   let touch: TouchControls | null = null;
   let input: InputManager<string> | null = null;
+  let gestures: CanvasGestures | null = null;
 
   let loadStarted = false;
   let destroyed = false;
@@ -199,6 +201,21 @@ export function createPlayArea(options: CreatePlayAreaOptions): PlayArea {
     };
     input = new InputManager<string>(inputOptions);
 
+    // --- On-canvas gestures (swipe/drag/tap) for games that declare them -----
+    // Dispatch feeds the same InputManager buffer as keyboard/touch buttons, so
+    // gestures reach the simulation through the identical per-frame drain
+    // (Req 3.2, 3.3). The layer is activated only while the game is running
+    // (see onStatusChange below), so an idle/paused canvas never blocks page
+    // scrolling (Req 3.5).
+    if (definition.gestures) {
+      const boundInput = input;
+      gestures = createCanvasGestures({
+        canvas,
+        spec: definition.gestures,
+        dispatch: (action) => boundInput.pushAction(action),
+      });
+    }
+
     // --- GameRunner bound to the canvas, scoreboard, and controls ------------
     runner = createGameRunner<unknown, string>({
       definition,
@@ -206,7 +223,10 @@ export function createPlayArea(options: CreatePlayAreaOptions): PlayArea {
       viewport: { width: size.width, height: size.height },
       input,
       onScoreChange: (score) => scoreboard?.setScore(score),
-      onStatusChange: (status) => controls?.setStatus(status),
+      onStatusChange: (status) => {
+        controls?.setStatus(status);
+        gestures?.setActive(status === "running");
+      },
     });
 
     // --- LifecycleControls: lifecycle bound to the runner; Back-to-Hub to the
@@ -270,6 +290,8 @@ export function createPlayArea(options: CreatePlayAreaOptions): PlayArea {
       scoreboard?.destroy();
       controls?.destroy();
       touch?.destroy();
+      gestures?.destroy();
+      gestures = null;
       input = null;
       runner = null;
       scoreboard = null;

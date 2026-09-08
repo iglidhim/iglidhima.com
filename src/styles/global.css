@@ -697,6 +697,22 @@ textarea:focus {
   border-radius: var(--radius-md);
 }
 
+/* Short viewports (small phones in portrait): tighten the Play_Area's spacing
+   and the touch buttons so the canvas, lifecycle controls, AND Touch_Controls
+   all fit within the initial viewport (Req 8.4). Buttons stay comfortably
+   above the 44px minimum touch-target size (Req 9.5). */
+@media (max-height: 760px) {
+  .play-area {
+    gap: var(--space-sm);
+    padding: var(--space-sm);
+  }
+
+  .touch-controls__btn {
+    min-width: 56px;
+    min-height: 56px;
+  }
+}
+
 /* ----------------------------------------------------------------------------
    Responsive breakpoints
    ---------------------------------------------------------------------------- */

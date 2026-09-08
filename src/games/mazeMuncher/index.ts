@@ -137,7 +137,7 @@ export const mazeMuncher: GameDefinition<MazeState, MazeMuncherAction> = {
   id: "maze-muncher",
   name: "Pac-Man",
   instructions:
-    "Use the arrow keys or WASD to navigate the maze. Collect every pellet to win, but don't let the pursuers catch you.",
+    "Use the arrow keys or WASD — or drag across the maze on a touch screen — to move. Collect every pellet to win, but don't let the pursuers catch you.",
   aspectRatio: BOARD_COLS / BOARD_ROWS,
 
   // Arrow keys and WASD (both cases) map to the four directions (Req 3.1).
@@ -166,6 +166,18 @@ export const mazeMuncher: GameDefinition<MazeState, MazeMuncherAction> = {
     { action: "left", label: "Move left", position: "left" },
     { action: "right", label: "Move right", position: "right" },
   ],
+
+  // On-canvas gestures: drag to walk the maze (Req 3.2, 8.4). Each action
+  // moves the muncher exactly one cell, so the drag step is one board cell of
+  // display size per axis — dragging a finger three cells to the right walks
+  // three cells right, and the re-arming gesture makes held drags feel like
+  // continuous movement. Wall collisions stay no-ops in the pure logic.
+  gestures: {
+    up: { action: "up", stepFraction: 1 / BOARD_ROWS },
+    down: { action: "down", stepFraction: 1 / BOARD_ROWS },
+    left: { action: "left", stepFraction: 1 / BOARD_COLS },
+    right: { action: "right", stepFraction: 1 / BOARD_COLS },
+  },
 
   createInitialState,
   step,

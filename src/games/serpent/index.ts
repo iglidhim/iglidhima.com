@@ -111,7 +111,7 @@ export const serpent: GameDefinition<SerpentState, SerpentAction> = {
   id: "serpent",
   name: "Snake",
   instructions:
-    "Steer the serpent with the arrow keys or WASD. Eat the food to grow and score. Avoid the walls and your own tail.",
+    "Steer the serpent with the arrow keys or WASD — or swipe the board on a touch screen. Eat the food to grow and score. Avoid the walls and your own tail.",
   aspectRatio: COLS / ROWS,
   keyMap: {
     ArrowUp: "up",
@@ -134,6 +134,17 @@ export const serpent: GameDefinition<SerpentState, SerpentAction> = {
     { action: "left", label: "Move left", position: "left" },
     { action: "right", label: "Move right", position: "right" },
   ],
+  // On-canvas gestures: swipe (or keep dragging) to steer (Req 3.2, 8.4). A
+  // short pull — 12% of the board's display size — turns the snake, and the
+  // gesture re-arms as the finger keeps moving, so one continuous drag can
+  // steer around corners. Direction conflicts are resolved by the pure logic
+  // (a 180° reversal is ignored; the last valid direction wins).
+  gestures: {
+    up: { action: "up", stepFraction: 0.12 },
+    down: { action: "down", stepFraction: 0.12 },
+    left: { action: "left", stepFraction: 0.12 },
+    right: { action: "right", stepFraction: 0.12 },
+  },
   createInitialState,
   step,
   isGameOver,
