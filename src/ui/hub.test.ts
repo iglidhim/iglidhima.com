@@ -49,12 +49,12 @@ describe("createHub", () => {
     expect(host.querySelector(".hub__title")?.textContent).toBe("Arcade");
   });
 
-  it("renders four game entries with names and control labels (Req 1.1, 1.2)", () => {
+  it("renders five game entries with names and control labels (Req 1.1, 1.2)", () => {
     const hub = createHub({ onSelect: () => {}, votes: stubVoteDeps() });
     hub.mount(host);
 
     const cards = host.querySelectorAll<HTMLElement>(".hub-card");
-    expect(cards).toHaveLength(4);
+    expect(cards).toHaveLength(5);
 
     const expectedNames = (Object.keys(GAME_REGISTRY) as GameId[]).map(
       (id) => GAME_REGISTRY[id].name,
@@ -66,18 +66,24 @@ describe("createHub", () => {
 
     // Every entry carries a non-empty control label.
     const labels = host.querySelectorAll(".hub-card__label");
-    expect(labels).toHaveLength(4);
+    expect(labels).toHaveLength(5);
     labels.forEach((el) => expect(el.textContent?.trim().length).toBeGreaterThan(0));
   });
 
-  it("renders the current display names (Tetris, Snake, Pac-Man, Brick Buster)", () => {
+  it("renders the current display names (Tetris, Snake, Pac-Man, Brick Buster, Road Racer)", () => {
     const hub = createHub({ onSelect: () => {}, votes: stubVoteDeps() });
     hub.mount(host);
 
     const renderedNames = Array.from(
       host.querySelectorAll(".hub-card__name"),
     ).map((el) => el.textContent);
-    expect(renderedNames).toEqual(["Tetris", "Snake", "Pac-Man", "Brick Buster"]);
+    expect(renderedNames).toEqual([
+      "Tetris",
+      "Snake",
+      "Pac-Man",
+      "Brick Buster",
+      "Road Racer",
+    ]);
 
     // The accessible name of each play button is built from the display name, so
     // it announces "Play <name>. ..." for assistive tech (Requirement 9.5).
@@ -92,7 +98,7 @@ describe("createHub", () => {
     hub.mount(host);
 
     const cards = host.querySelectorAll<HTMLElement>(".hub-card");
-    expect(cards).toHaveLength(4);
+    expect(cards).toHaveLength(5);
 
     cards.forEach((card) => {
       const icon = card.querySelector("svg");
@@ -117,7 +123,7 @@ describe("createHub", () => {
     hub.mount(host);
 
     const cards = host.querySelectorAll<HTMLElement>(".hub-card");
-    expect(cards).toHaveLength(4);
+    expect(cards).toHaveLength(5);
     cards.forEach((card) => {
       // The container is not itself a button (avoids nested interactive controls).
       expect(card.tagName).not.toBe("BUTTON");
@@ -194,9 +200,9 @@ describe("createHub — Family Corner entry", () => {
     expect(entry?.tagName).toBe("BUTTON");
     expect(entry?.type).toBe("button");
     expect(entry?.getAttribute("aria-label")?.length).toBeGreaterThan(0);
-    // It is not one of the four game cards.
+    // It is not one of the five game cards.
     expect(entry?.classList.contains("hub-card")).toBe(false);
-    expect(host.querySelectorAll(".hub-card")).toHaveLength(4);
+    expect(host.querySelectorAll(".hub-card")).toHaveLength(5);
   });
 
   it("omits the Family Corner entry when no callback is provided", () => {
@@ -256,7 +262,7 @@ describe("createHub — Family Corner entry", () => {
 describe("createHub — Chess game card", () => {
   let host: HTMLElement;
 
-  /** The Chess card's stable selector: the 5th `.hub-card[data-game-id="chess"]`. */
+  /** The Chess card's stable selector: the 6th `.hub-card[data-game-id="chess"]`. */
   const CHESS_CARD = '.hub-card[data-game-id="chess"]';
   const CHESS_PLAY = `${CHESS_CARD} .hub-card__play`;
 
@@ -266,7 +272,7 @@ describe("createHub — Chess game card", () => {
     document.body.appendChild(host);
   });
 
-  it("renders Chess as a 5th game card, last in the grid, when the callback is provided", () => {
+  it("renders Chess as a 6th game card, last in the grid, when the callback is provided", () => {
     const hub = createHub({
       onSelect: () => {},
       onOpenChess: () => {},
@@ -275,11 +281,11 @@ describe("createHub — Chess game card", () => {
     hub.mount(host);
 
     const cards = host.querySelectorAll<HTMLElement>(".hub-card");
-    expect(cards).toHaveLength(5);
-    // Chess is the last card in the grid, after brick-buster.
+    expect(cards).toHaveLength(6);
+    // Chess is the last card in the grid, after road-racer.
     const last = cards[cards.length - 1];
     expect(last?.dataset.gameId).toBe("chess");
-    expect(cards[cards.length - 2]?.dataset.gameId).toBe("brick-buster");
+    expect(cards[cards.length - 2]?.dataset.gameId).toBe("road-racer");
 
     // It uses the same card structure as the game cards.
     const card = host.querySelector<HTMLElement>(CHESS_CARD);
@@ -305,7 +311,7 @@ describe("createHub — Chess game card", () => {
     hub.mount(host);
 
     expect(host.querySelector(CHESS_CARD)).toBeNull();
-    expect(host.querySelectorAll(".hub-card")).toHaveLength(4);
+    expect(host.querySelectorAll(".hub-card")).toHaveLength(5);
   });
 
   it("invokes onOpenChess (not onSelect) when the Chess play button is activated", () => {
@@ -443,7 +449,7 @@ describe("createHub — vote bar", () => {
     hub.mount(host);
 
     const cards = host.querySelectorAll<HTMLElement>(".hub-card");
-    expect(cards).toHaveLength(4);
+    expect(cards).toHaveLength(5);
 
     cards.forEach((card) => {
       const bar = card.querySelector(".hub-card__votes");

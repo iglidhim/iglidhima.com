@@ -41,6 +41,7 @@ const GAME_IDS = [
   "serpent",
   "maze-muncher",
   "brick-buster",
+  "road-racer",
   "chess",
 ];
 

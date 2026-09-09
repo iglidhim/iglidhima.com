@@ -64,6 +64,21 @@ export const GAME_ICONS: Record<VoteTargetId, string> = {
       <rect x="14" y="39" width="20" height="4.5" rx="2.25" />
     </svg>`,
 
+  // Top-down little Beetle racing up between speed lines: rounded capsule
+  // body, four poking-out wheels, glass bands via opacity.
+  "road-racer": `
+    <svg class="hub-card__icon" viewBox="0 0 48 48" aria-hidden="true" focusable="false" fill="currentColor">
+      <rect x="11" y="10" width="5" height="9" rx="2" opacity="0.7" />
+      <rect x="32" y="10" width="5" height="9" rx="2" opacity="0.7" />
+      <rect x="11" y="29" width="5" height="9" rx="2" opacity="0.7" />
+      <rect x="32" y="29" width="5" height="9" rx="2" opacity="0.7" />
+      <rect x="14" y="5" width="20" height="38" rx="10" />
+      <rect x="18" y="14" width="12" height="5" rx="2" opacity="0.35" />
+      <rect x="18" y="30" width="12" height="4" rx="2" opacity="0.35" />
+      <rect x="4" y="12" width="3" height="10" rx="1.5" opacity="0.5" />
+      <rect x="41" y="26" width="3" height="10" rx="1.5" opacity="0.5" />
+    </svg>`,
+
   // Chess: a knight silhouette built from a single simple shape, atop a base
   // plinth, with a small punched-out eye (via opacity) for character.
   chess: `

@@ -6,7 +6,7 @@ import fc from "fast-check";
 import { voteDelta, zeroVotes } from "./votes";
 
 describe("zeroVotes", () => {
-  it("includes the four games plus the chess target, all zeroed", () => {
+  it("includes the five games plus the chess target, all zeroed", () => {
     const zero = zeroVotes();
     expect(Object.keys(zero).sort()).toEqual(
       [
@@ -14,6 +14,7 @@ describe("zeroVotes", () => {
         "brick-buster",
         "chess",
         "maze-muncher",
+        "road-racer",
         "serpent",
       ].sort(),
     );

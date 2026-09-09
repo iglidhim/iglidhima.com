@@ -46,6 +46,7 @@ const VOTE_TARGET_IDS: readonly VoteTargetId[] = [
   "serpent",
   "maze-muncher",
   "brick-buster",
+  "road-racer",
   "chess",
 ];
 

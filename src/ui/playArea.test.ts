@@ -47,6 +47,7 @@ function makeRegistry(
     serpent: entry,
     "maze-muncher": entry,
     "brick-buster": entry,
+    "road-racer": entry,
   };
 }
 

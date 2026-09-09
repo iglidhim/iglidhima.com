@@ -40,4 +40,9 @@ export const GAME_REGISTRY: Record<
     loader: async () =>
       (await import("./brickBuster/index")).brickBuster as unknown as AnyGameDefinition,
   },
+  "road-racer": {
+    name: "Road Racer",
+    loader: async () =>
+      (await import("./roadRacer/index")).roadRacer as unknown as AnyGameDefinition,
+  },
 };

@@ -1,7 +1,12 @@
 // src/engine/types.ts
 // Shared engine contract: the type shapes every game and the engine layer agree on.
 
-export type GameId = "block-cascade" | "serpent" | "maze-muncher" | "brick-buster";
+export type GameId =
+  | "block-cascade"
+  | "serpent"
+  | "maze-muncher"
+  | "brick-buster"
+  | "road-racer";
 
 export type GameStatus = "idle" | "running" | "paused" | "gameover";
 

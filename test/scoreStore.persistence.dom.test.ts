@@ -15,6 +15,7 @@ const GAME_IDS: readonly GameId[] = [
   "serpent",
   "maze-muncher",
   "brick-buster",
+  "road-racer",
 ];
 
 const gameIdArb = fc.constantFrom<GameId>(...GAME_IDS);

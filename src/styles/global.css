@@ -413,6 +413,9 @@ textarea:focus {
 .hub-card[data-game-id="brick-buster"] .hub-card__icon {
   color: var(--color-accent-pink);
 }
+.hub-card[data-game-id="road-racer"] .hub-card__icon {
+  color: var(--color-accent-pink);
+}
 .hub-card[data-game-id="chess"] .hub-card__icon {
   color: var(--color-accent-cyan);
 }

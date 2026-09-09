@@ -39,7 +39,7 @@ describe("arcade bootstrap smoke test", () => {
     // Chess is appended after them.
     const cards = root.querySelectorAll<HTMLButtonElement>(".hub-card");
     expect(cards).toHaveLength(GAME_COUNT + 1);
-    expect(GAME_COUNT).toBe(4);
+    expect(GAME_COUNT).toBe(5);
 
     const gameCards = Array.from(cards).filter(
       (c) => c.dataset.gameId !== "chess",

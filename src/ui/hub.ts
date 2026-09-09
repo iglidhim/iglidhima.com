@@ -65,6 +65,7 @@ const CONTROL_LABELS: Record<GameId, string> = {
   serpent: "Arrow keys to steer",
   "maze-muncher": "Arrow keys to move",
   "brick-buster": "Left / Right to move the paddle",
+  "road-racer": "Left / Right to steer the Beetle",
 };
 
 /**

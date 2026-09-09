@@ -14,6 +14,7 @@ const GAME_IDS: readonly GameId[] = [
   "serpent",
   "maze-muncher",
   "brick-buster",
+  "road-racer",
 ];
 
 const gameIdArb: fc.Arbitrary<GameId> = fc.constantFrom(...GAME_IDS);
